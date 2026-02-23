@@ -7,7 +7,7 @@ A cross-platform desktop application built with Tauri that automates photo print
 - **Framework:** Tauri v2
 - **Frontend:** React 19 + TypeScript, Vite 7
 - **Backend:** Rust
-- **Styling:** Tailwind CSS
+- **Styling:** Tailwind CSS + shadcn/ui
 - **Platforms:** Windows (primary), macOS (secondary)
 
 ## Prerequisites

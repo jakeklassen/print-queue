@@ -8,7 +8,7 @@ PrintQueue is a Tauri v2 desktop application that automates photo printing workf
 
 ## Tech Stack
 
-- **Frontend:** React 19, TypeScript, Vite 7, Tailwind CSS
+- **Frontend:** React 19, TypeScript, Vite 7, Tailwind CSS, shadcn/ui
 - **Backend:** Rust (Tauri v2)
 - **Package Manager:** pnpm
 - **Required Toolchain:** Node 24.13.1, Rust 1.93.1, pnpm 10.30.1 (see `mise.toml`)

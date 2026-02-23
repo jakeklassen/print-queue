@@ -29,7 +29,7 @@ Makers who print photos, magnets, stickers, and other physical products currentl
 - **Framework:** Tauri v2
 - **Frontend:** React with TypeScript (TanStack Router if multi-view)
 - **Backend:** Rust
-- **Styling:** Tailwind CSS
+- **Styling:** Tailwind CSS + shadcn/ui
 
 ### Rust Crates (Key Dependencies)
 
