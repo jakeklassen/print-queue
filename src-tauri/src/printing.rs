@@ -39,6 +39,22 @@ pub struct PrinterCapabilities {
 }
 
 pub fn discover_printers() -> Vec<PrinterInfo> {
+    // On macOS/Linux, use lpstat to get the real CUPS queue names.
+    // The `printers` crate returns display names (with spaces/hyphens) that
+    // don't work with lpoptions/lp commands which need the queue name
+    // (underscored form).
+    #[cfg(not(target_os = "windows"))]
+    {
+        discover_printers_cups()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        discover_printers_windows()
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn discover_printers_windows() -> Vec<PrinterInfo> {
     let system_printers = printers::get_printers();
     let default_printer = printers::get_default_printer();
     let default_name = default_printer.as_ref().map(|p| p.name.clone());
@@ -56,6 +72,81 @@ pub fn discover_printers() -> Vec<PrinterInfo> {
             }
         })
         .collect()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn discover_printers_cups() -> Vec<PrinterInfo> {
+    use std::process::Command;
+
+    let mut printers_list = Vec::new();
+
+    // Get default printer
+    let default_name = Command::new("lpstat")
+        .args(["-d"])
+        .output()
+        .ok()
+        .and_then(|out| {
+            if out.status.success() {
+                let text = String::from_utf8_lossy(&out.stdout).to_string();
+                // Output: "system default destination: PRINTER_NAME"
+                text.split(':').nth(1).map(|s| s.trim().to_string())
+            } else {
+                None
+            }
+        });
+
+    // Get all printers via lpstat -p
+    let output = Command::new("lpstat")
+        .args(["-p"])
+        .output();
+
+    if let Ok(out) = output {
+        if out.status.success() {
+            let text = String::from_utf8_lossy(&out.stdout);
+            for line in text.lines() {
+                // Lines look like: "printer QUEUE_NAME is idle.  enabled since ..."
+                //               or: "printer QUEUE_NAME disabled since ..."
+                if let Some(rest) = line.strip_prefix("printer ") {
+                    // Queue name is the next token
+                    if let Some(queue_name) = rest.split_whitespace().next() {
+                        let is_default = default_name.as_deref() == Some(queue_name);
+                        let is_online = !rest.contains("disabled");
+                        // Use queue name as both id and display name — it's what CUPS commands need
+                        printers_list.push(PrinterInfo {
+                            id: queue_name.to_string(),
+                            name: queue_name.replace('_', " "),
+                            driver: String::new(),
+                            is_default,
+                            is_online,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback to printers crate if lpstat returned nothing
+    if printers_list.is_empty() {
+        let system_printers = printers::get_printers();
+        let default_printer = printers::get_default_printer();
+        let default_name = default_printer.as_ref().map(|p| p.name.clone());
+
+        printers_list = system_printers
+            .into_iter()
+            .map(|p| {
+                let is_default = default_name.as_deref() == Some(&p.name);
+                PrinterInfo {
+                    id: p.name.clone(),
+                    name: p.name.clone(),
+                    driver: p.driver_name,
+                    is_default,
+                    is_online: true,
+                }
+            })
+            .collect();
+    }
+
+    printers_list
 }
 
 // ─── macOS / Linux: parse `lpoptions -p <printer> -l` ───────────────────────

@@ -1,8 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use notify::event::CreateKind;
@@ -14,6 +14,11 @@ use crate::jobs::{JobQueueState, JobStatus, PrintJob};
 use crate::models::{PostFileAction, Preset};
 use crate::parser::parse_size_keyword;
 use crate::storage::StorageState;
+
+/// How long after processing a file before we'll process it again.
+/// This prevents duplicate events from the file watcher (Create + multiple Modify events)
+/// from creating multiple queue entries.
+const DEDUP_WINDOW: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -28,7 +33,9 @@ pub struct WatcherState {
     pub status: Mutex<WatcherStatus>,
     pub watcher: Mutex<Option<RecommendedWatcher>>,
     processed_zips: Mutex<HashSet<String>>,
-    processing_files: Mutex<HashSet<PathBuf>>,
+    /// Tracks recently processed files with their processing timestamp.
+    /// Events for the same path within DEDUP_WINDOW are ignored.
+    recently_processed: Mutex<HashMap<PathBuf, Instant>>,
 }
 
 impl WatcherState {
@@ -37,7 +44,7 @@ impl WatcherState {
             status: Mutex::new(WatcherStatus::Idle),
             watcher: Mutex::new(None),
             processed_zips: Mutex::new(HashSet::new()),
-            processing_files: Mutex::new(HashSet::new()),
+            recently_processed: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -178,13 +185,27 @@ fn handle_file(
         return;
     }
 
-    // Check if already being processed
+    // Skip files in "processed_zips" subfolder
+    if path.parent().and_then(|p| p.file_name()).map(|n| n == "processed_zips").unwrap_or(false) {
+        return;
+    }
+
+    // Dedup: skip if this file was processed recently
     {
-        let mut processing = watcher_state.processing_files.lock().unwrap();
-        if processing.contains(path) {
-            return;
+        let mut recent = watcher_state.recently_processed.lock().unwrap();
+        let now = Instant::now();
+
+        // Clean up stale entries while we have the lock
+        recent.retain(|_, timestamp| now.duration_since(*timestamp) < DEDUP_WINDOW);
+
+        if let Some(last_processed) = recent.get(path) {
+            if now.duration_since(*last_processed) < DEDUP_WINDOW {
+                return; // Already processed recently, skip
+            }
         }
-        processing.insert(path.to_path_buf());
+
+        // Mark as processing now (before the sleep) to block concurrent events
+        recent.insert(path.to_path_buf(), now);
     }
 
     let result = if is_zip_file(path) {
@@ -194,11 +215,6 @@ fn handle_file(
     } else {
         Ok(())
     };
-
-    // Remove from processing set
-    if let Ok(mut processing) = watcher_state.processing_files.lock() {
-        processing.remove(path);
-    }
 
     if let Err(e) = result {
         eprintln!("Error processing {}: {}", path.display(), e);
@@ -348,14 +364,14 @@ fn handle_image(
             let _ = app.emit("job-updated", "");
         }
     } else {
-        // No matching preset — create a "needs attention" job
+        // No matching preset — mark as skipped
         let mut job = PrintJob::new(
             filename.clone(),
             image_path.display().to_string(),
             None,
             None,
         );
-        job.status = JobStatus::NeedsAttention;
+        job.status = JobStatus::Skipped;
         job.error_message = Some(format!(
             "No preset matched{}",
             keyword.map(|k| format!(" for keyword '{}'", k)).unwrap_or_default()

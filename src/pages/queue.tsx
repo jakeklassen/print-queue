@@ -25,7 +25,7 @@ const statusConfig: Record<
   printing: { icon: Loader2, label: "Printing", variant: "default" },
   complete: { icon: CheckCircle2, label: "Complete", variant: "outline" },
   error: { icon: AlertCircle, label: "Error", variant: "destructive" },
-  needs_attention: { icon: AlertCircle, label: "Needs Attention", variant: "destructive" },
+  skipped: { icon: AlertCircle, label: "Skipped", variant: "secondary" },
 };
 
 export function QueuePage() {
@@ -73,7 +73,7 @@ export function QueuePage() {
     (j) => j.status === "pending" || j.status === "printing",
   );
   const completedJobs = jobs.filter(
-    (j) => j.status === "complete" || j.status === "error" || j.status === "needs_attention",
+    (j) => j.status === "complete" || j.status === "error" || j.status === "skipped",
   );
 
   return (

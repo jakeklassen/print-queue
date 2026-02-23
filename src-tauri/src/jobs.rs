@@ -11,7 +11,7 @@ pub enum JobStatus {
     Printing,
     Complete,
     Error,
-    NeedsAttention,
+    Skipped,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
