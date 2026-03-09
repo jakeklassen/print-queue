@@ -62,6 +62,7 @@ export function PresetsPage() {
     settings: PrintSettings;
     copies: number;
     auto_print: boolean;
+    devmode_base64: string | null;
   }) => {
     const preset = await createPreset(data.name, data.paper_size_keyword);
     const updated: Preset = {
@@ -70,6 +71,7 @@ export function PresetsPage() {
       settings: data.settings,
       copies: data.copies,
       auto_print: data.auto_print,
+      devmode_base64: data.devmode_base64,
     };
     await updatePreset(updated);
     setShowCreate(false);
@@ -83,6 +85,7 @@ export function PresetsPage() {
     settings: PrintSettings;
     copies: number;
     auto_print: boolean;
+    devmode_base64: string | null;
   }) => {
     if (!editingPreset) return;
     const updated: Preset = {
@@ -93,6 +96,7 @@ export function PresetsPage() {
       settings: data.settings,
       copies: data.copies,
       auto_print: data.auto_print,
+      devmode_base64: data.devmode_base64,
       updated_at: new Date().toISOString(),
     };
     await updatePreset(updated);
@@ -111,6 +115,7 @@ export function PresetsPage() {
       settings: { ...preset.settings },
       copies: preset.copies,
       auto_print: preset.auto_print,
+      devmode_base64: preset.devmode_base64,
     };
     await updatePreset(duplicated);
     refresh();

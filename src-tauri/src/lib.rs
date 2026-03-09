@@ -89,6 +89,8 @@ pub fn run() {
             commands::cancel_job,
             commands::retry_job,
             commands::reprint_job,
+            commands::get_platform,
+            commands::open_printer_dialog,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

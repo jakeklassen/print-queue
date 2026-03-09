@@ -20,6 +20,7 @@ export interface Preset {
   copies: number;
   auto_print: boolean;
   scale_compensation: number;
+  devmode_base64: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -470,10 +470,48 @@ fn submit_print_windows(file_path: &Path, printer_id: &str, preset: &Preset) -> 
 #[cfg(target_os = "windows")]
 fn build_print_script(printer_name: &str, file_path: &str, preset: &Preset) -> String {
     let copies = preset.copies;
-    let has_settings = !preset.settings.is_empty();
 
-    // Build the print ticket manipulation block if we have settings
-    let ticket_block = if has_settings {
+    // Priority: DEVMODE blob > Print Ticket XML > basic PrintDocument
+    let settings_block = if let Some(ref b64) = preset.devmode_base64 {
+        // DEVMODE-direct path: decode stored blob and apply directly
+        format!(
+            r#"
+    # Apply DEVMODE blob directly (captured from native driver dialog)
+    $devModeB64 = '{b64}'
+    $devModeBytes = [System.Convert]::FromBase64String($devModeB64)
+
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Drawing.Printing;
+
+public static class DevModeApplier {{
+    [DllImport("kernel32.dll")]
+    static extern IntPtr GlobalAlloc(uint flags, UIntPtr size);
+    [DllImport("kernel32.dll")]
+    static extern IntPtr GlobalLock(IntPtr hMem);
+    [DllImport("kernel32.dll")]
+    static extern bool GlobalUnlock(IntPtr hMem);
+
+    public static void Apply(PrinterSettings ps, PageSettings page, byte[] dm) {{
+        IntPtr hGlobal = GlobalAlloc(0x0042, (UIntPtr)dm.Length);
+        IntPtr ptr = GlobalLock(hGlobal);
+        Marshal.Copy(dm, 0, ptr, dm.Length);
+        GlobalUnlock(hGlobal);
+        ps.SetHdevmode(hGlobal);
+        page.SetHdevmode(hGlobal);
+    }}
+}}
+"@ -ReferencedAssemblies System.Drawing
+
+    [DevModeApplier]::Apply($pd.PrinterSettings, $pd.DefaultPageSettings, $devModeBytes)
+    $pd.PrinterSettings.Copies = {copies}
+"#,
+            b64 = b64,
+            copies = copies,
+        )
+    } else if !preset.settings.is_empty() {
+        // Print Ticket XML path (existing fallback)
         let mut settings_entries = String::new();
         for (key, value) in &preset.settings {
             let k = key.replace('\'', "''");
@@ -608,7 +646,7 @@ try {{
     $pd = New-Object System.Drawing.Printing.PrintDocument
     $pd.PrinterSettings.PrinterName = $printerName
     $pd.PrinterSettings.Copies = {copies}
-{ticket_block}
+{settings_block}
     $pd.add_PrintPage({{
         param($sender, $e)
         # Draw the image to fill the entire page (no scaling logic — the
@@ -632,7 +670,7 @@ try {{
         printer_name = printer_name,
         file_path = file_path,
         copies = copies,
-        ticket_block = ticket_block,
+        settings_block = settings_block,
     )
 }
 

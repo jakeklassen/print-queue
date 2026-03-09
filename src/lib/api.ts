@@ -45,3 +45,10 @@ export const listJobs = () => invoke<PrintJob[]>("list_jobs");
 export const cancelJob = (id: string) => invoke<void>("cancel_job", { id });
 export const retryJob = (id: string) => invoke<void>("retry_job", { id });
 export const reprintJob = (id: string) => invoke<void>("reprint_job", { id });
+
+// Platform
+export const getPlatform = () => invoke<string>("get_platform");
+
+// Printer dialog (Windows only)
+export const openPrinterDialog = (printerId: string) =>
+  invoke<string>("open_printer_dialog", { printerId });

@@ -46,6 +46,8 @@ pub struct Preset {
     pub copies: u32,
     pub auto_print: bool,
     pub scale_compensation: f64,
+    #[serde(default)]
+    pub devmode_base64: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -62,6 +64,7 @@ impl Preset {
             copies: 1,
             auto_print: true,
             scale_compensation: 1.0,
+            devmode_base64: None,
             created_at: now,
             updated_at: now,
         }
