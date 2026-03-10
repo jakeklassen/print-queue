@@ -114,11 +114,7 @@ fn run_helper(app: &AppHandle, args: &[String]) -> Result<String, String> {
         .output()
         .map_err(|e| format!("Failed to launch macOS helper: {}", e))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    if !stdout.trim().is_empty() {
-        eprintln!("[PrintQueue][macOS] helper stdout: {}", stdout.trim());
-    }
     if !stderr.trim().is_empty() {
         eprintln!("[PrintQueue][macOS] helper stderr: {}", stderr.trim());
     }

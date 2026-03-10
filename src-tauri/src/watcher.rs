@@ -711,6 +711,7 @@ try {{
 // ─── macOS / Linux printing ──────────────────────────────────────────────────
 
 #[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
 fn submit_print_unix(file_path: &Path, printer_id: &str, preset: &Preset) -> Result<(), String> {
     use std::process::Command;
 
@@ -814,7 +815,7 @@ fn submit_print_unix(file_path: &Path, printer_id: &str, preset: &Preset) -> Res
 }
 
 /// Known paper sizes in points (1 point = 1/72 inch).
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
 fn paper_size_points(page_size_key: &str) -> Option<(f32, f32)> {
     let base = page_size_key.split('.').next().unwrap_or(page_size_key);
     match base {
@@ -839,7 +840,7 @@ fn paper_size_points(page_size_key: &str) -> Option<(f32, f32)> {
 /// - PNG/TIFF: decoded to RGB and compressed with FlateDecode
 /// - DeviceRGB color space — Epson driver handles sRGB→printer conversion
 /// - Image scaled down by 1/cupsBorderlessScalingFactor and centered
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
 fn wrap_image_in_pdf(
     image_path: &Path,
     preset: &Preset,
@@ -1007,7 +1008,7 @@ fn wrap_image_in_pdf(
 /// The PPD lives at `/private/etc/cups/ppd/<printer_id>.ppd` on macOS.
 /// We look for lines like:
 ///   *PageSize EPKG.NMgn/...: "<</PageSize[...]/cupsBorderlessScalingFactor 1.06>>..."
-#[cfg(not(target_os = "windows"))]
+#[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
 pub fn get_cups_scaling_factor(printer_id: &str, page_size_key: &str) -> f32 {
     let sanitized_id: String = printer_id
         .chars()
