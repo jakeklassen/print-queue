@@ -15,6 +15,7 @@ import {
 import type { Preset, PrintSettings } from "@/lib/types";
 
 const DEFAULT_SETTINGS: PrintSettings = {};
+const DEFAULT_MACOS_NATIVE_SCALE = 0.9767;
 
 export interface PresetFormData {
   name: string;
@@ -153,6 +154,13 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
 
   const handleRetainSizeToggle = async (checked: boolean) => {
     setRetainSize(checked);
+    if (checked && isMacos) {
+      setScaleCompensation((current) =>
+        current < 1.0 ? current : DEFAULT_MACOS_NATIVE_SCALE,
+      );
+      return;
+    }
+
     if (checked && macosPrinterName) {
       try {
         const factor = await getBorderlessScaleFactor(
@@ -379,6 +387,30 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
         />
       </div>
+
+      {isMacos && retainSize && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="macos-native-scale">Native Size Scale</Label>
+          <Input
+            id="macos-native-scale"
+            type="number"
+            min={0.8}
+            max={1.0}
+            step={0.0001}
+            value={scaleCompensation.toFixed(4)}
+            onChange={(e) => {
+              const value = Number.parseFloat(e.target.value);
+              if (Number.isFinite(value)) {
+                setScaleCompensation(Math.min(1.0, Math.max(0.8, value)));
+              }
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            macOS-native size calibration applied to the wrapped PDF content before printing.
+            Start around {DEFAULT_MACOS_NATIVE_SCALE.toFixed(4)} and tune per preset if needed.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Switch
