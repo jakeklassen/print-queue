@@ -3,6 +3,8 @@ use tauri::{AppHandle, State};
 use uuid::Uuid;
 
 use crate::jobs::{JobQueueState, JobStatus, PrintJob};
+#[cfg(target_os = "macos")]
+use crate::macos_printing::{self, MacOSPrintConfiguration};
 use crate::models::{AppConfig, Preset};
 use crate::printing::{self, PrinterCapabilities, PrinterInfo};
 use crate::storage::StorageState;
@@ -129,7 +131,8 @@ public static class PrinterDialog {{
     let output = Command::new("powershell")
         .args([
             "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
+            "-ExecutionPolicy",
+            "Bypass",
             "-File",
             &script_path.display().to_string(),
         ])
@@ -183,7 +186,11 @@ pub fn list_presets(state: State<Arc<StorageState>>) -> Result<Vec<Preset>, Stri
 }
 
 #[tauri::command]
-pub fn create_preset(state: State<Arc<StorageState>>, name: String, paper_size_keyword: String) -> Result<Preset, String> {
+pub fn create_preset(
+    state: State<Arc<StorageState>>,
+    name: String,
+    paper_size_keyword: String,
+) -> Result<Preset, String> {
     let preset = Preset::new(name, paper_size_keyword);
     let mut presets = state.presets.lock().map_err(|e| e.to_string())?;
     presets.push(preset.clone());
@@ -194,7 +201,9 @@ pub fn create_preset(state: State<Arc<StorageState>>, name: String, paper_size_k
 #[tauri::command]
 pub fn update_preset(state: State<Arc<StorageState>>, preset: Preset) -> Result<Preset, String> {
     let mut presets = state.presets.lock().map_err(|e| e.to_string())?;
-    let idx = presets.iter().position(|p| p.id == preset.id)
+    let idx = presets
+        .iter()
+        .position(|p| p.id == preset.id)
         .ok_or_else(|| format!("Preset {} not found", preset.id))?;
     presets[idx] = preset.clone();
     state.save_presets(&presets)?;
@@ -204,7 +213,9 @@ pub fn update_preset(state: State<Arc<StorageState>>, preset: Preset) -> Result<
 #[tauri::command]
 pub fn delete_preset(state: State<Arc<StorageState>>, id: Uuid) -> Result<(), String> {
     let mut presets = state.presets.lock().map_err(|e| e.to_string())?;
-    let idx = presets.iter().position(|p| p.id == id)
+    let idx = presets
+        .iter()
+        .position(|p| p.id == id)
         .ok_or_else(|| format!("Preset {} not found", id))?;
     presets.remove(idx);
     state.save_presets(&presets)?;
@@ -212,13 +223,56 @@ pub fn delete_preset(state: State<Arc<StorageState>>, id: Uuid) -> Result<(), St
 }
 
 #[tauri::command]
-pub fn list_printers() -> Vec<PrinterInfo> {
+pub fn list_printers(app_handle: AppHandle) -> Vec<PrinterInfo> {
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(printers) = macos_printing::list_printers(&app_handle) {
+            return printers;
+        }
+    }
+
     printing::discover_printers()
 }
 
 #[tauri::command]
 pub fn get_printer_capabilities(printer_id: String) -> PrinterCapabilities {
     printing::get_printer_capabilities(&printer_id)
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+pub fn configure_macos_printer(
+    app_handle: AppHandle,
+    printer_id: Option<String>,
+    paper_size_keyword: Option<String>,
+) -> Result<MacOSPrintConfiguration, String> {
+    macos_printing::configure_printer(
+        &app_handle,
+        printer_id.as_deref(),
+        paper_size_keyword.as_deref(),
+    )
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+pub fn configure_macos_printer(
+    _app_handle: AppHandle,
+    _printer_id: Option<String>,
+    _paper_size_keyword: Option<String>,
+) -> Result<String, String> {
+    Err("macOS native printer configuration is only available on macOS".to_string())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+pub fn get_borderless_scale_factor(printer_id: String, paper_size_keyword: String) -> f64 {
+    crate::watcher::get_cups_scaling_factor_by_keyword(&printer_id, &paper_size_keyword) as f64
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub fn get_borderless_scale_factor(_printer_id: String, _paper_size_keyword: String) -> f64 {
+    1.0
 }
 
 #[tauri::command]
@@ -245,7 +299,9 @@ pub fn stop_watcher(watcher_state: State<Arc<WatcherState>>) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub fn get_watcher_status(watcher_state: State<Arc<WatcherState>>) -> Result<WatcherStatus, String> {
+pub fn get_watcher_status(
+    watcher_state: State<Arc<WatcherState>>,
+) -> Result<WatcherStatus, String> {
     let status = watcher_state.status.lock().map_err(|e| e.to_string())?;
     Ok(status.clone())
 }
@@ -269,10 +325,7 @@ pub fn cancel_job(queue: State<Arc<JobQueueState>>, id: Uuid) -> Result<(), Stri
 }
 
 #[tauri::command]
-pub fn retry_job(
-    queue: State<Arc<JobQueueState>>,
-    id: Uuid,
-) -> Result<(), String> {
+pub fn retry_job(queue: State<Arc<JobQueueState>>, id: Uuid) -> Result<(), String> {
     let mut jobs = queue.jobs.lock().map_err(|e| e.to_string())?;
     if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
         if job.status == JobStatus::Error {
@@ -285,10 +338,7 @@ pub fn retry_job(
 }
 
 #[tauri::command]
-pub fn reprint_job(
-    queue: State<Arc<JobQueueState>>,
-    id: Uuid,
-) -> Result<(), String> {
+pub fn reprint_job(queue: State<Arc<JobQueueState>>, id: Uuid) -> Result<(), String> {
     let jobs = queue.jobs.lock().map_err(|e| e.to_string())?;
     let original = jobs
         .iter()

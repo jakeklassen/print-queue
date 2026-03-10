@@ -49,8 +49,7 @@ pub fn parse_size_keyword(filename: &str) -> Option<String> {
 
             // Check delimiter boundaries
             let start_ok = abs_pos == 0 || is_delimiter(lower.as_bytes()[abs_pos - 1] as char);
-            let end_ok =
-                end_pos >= lower.len() || is_delimiter(lower.as_bytes()[end_pos] as char);
+            let end_ok = end_pos >= lower.len() || is_delimiter(lower.as_bytes()[end_pos] as char);
 
             if start_ok && end_ok {
                 return Some(canonical.to_string());
@@ -69,16 +68,34 @@ mod tests {
 
     #[test]
     fn test_basic_keywords() {
-        assert_eq!(parse_size_keyword("order_839_4x6_002.png"), Some("4x6".to_string()));
-        assert_eq!(parse_size_keyword("photo-A4-001.jpg"), Some("a4".to_string()));
-        assert_eq!(parse_size_keyword("batch.5x7.001.png"), Some("5x7".to_string()));
-        assert_eq!(parse_size_keyword("my_letter_print.tiff"), Some("8.5x11".to_string()));
+        assert_eq!(
+            parse_size_keyword("order_839_4x6_002.png"),
+            Some("4x6".to_string())
+        );
+        assert_eq!(
+            parse_size_keyword("photo-A4-001.jpg"),
+            Some("a4".to_string())
+        );
+        assert_eq!(
+            parse_size_keyword("batch.5x7.001.png"),
+            Some("5x7".to_string())
+        );
+        assert_eq!(
+            parse_size_keyword("my_letter_print.tiff"),
+            Some("8.5x11".to_string())
+        );
     }
 
     #[test]
     fn test_aliases() {
-        assert_eq!(parse_size_keyword("photo_4R_001.jpg"), Some("4x6".to_string()));
-        assert_eq!(parse_size_keyword("batch-KG-print.png"), Some("4x6".to_string()));
+        assert_eq!(
+            parse_size_keyword("photo_4R_001.jpg"),
+            Some("4x6".to_string())
+        );
+        assert_eq!(
+            parse_size_keyword("batch-KG-print.png"),
+            Some("4x6".to_string())
+        );
         assert_eq!(parse_size_keyword("image_5R.jpg"), Some("5x7".to_string()));
     }
 
@@ -96,11 +113,17 @@ mod tests {
 
     #[test]
     fn test_first_match_wins() {
-        assert_eq!(parse_size_keyword("photo_4x6_A4.jpg"), Some("4x6".to_string()));
+        assert_eq!(
+            parse_size_keyword("photo_4x6_A4.jpg"),
+            Some("4x6".to_string())
+        );
     }
 
     #[test]
     fn test_8_5x11() {
-        assert_eq!(parse_size_keyword("sticker_8.5x11_001.png"), Some("8.5x11".to_string()));
+        assert_eq!(
+            parse_size_keyword("sticker_8.5x11_001.png"),
+            Some("8.5x11".to_string())
+        );
     }
 }

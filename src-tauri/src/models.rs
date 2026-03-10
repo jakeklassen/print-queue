@@ -48,6 +48,14 @@ pub struct Preset {
     pub scale_compensation: f64,
     #[serde(default)]
     pub devmode_base64: Option<String>,
+    #[serde(default)]
+    pub macos_print_info_base64: Option<String>,
+    #[serde(default)]
+    pub macos_page_format_base64: Option<String>,
+    #[serde(default)]
+    pub macos_print_settings_base64: Option<String>,
+    #[serde(default)]
+    pub macos_printer_name: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -65,6 +73,10 @@ impl Preset {
             auto_print: true,
             scale_compensation: 1.0,
             devmode_base64: None,
+            macos_print_info_base64: None,
+            macos_page_format_base64: None,
+            macos_print_settings_base64: None,
+            macos_printer_name: None,
             created_at: now,
             updated_at: now,
         }

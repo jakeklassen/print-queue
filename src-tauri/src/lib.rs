@@ -1,5 +1,6 @@
 mod commands;
 mod jobs;
+mod macos_printing;
 mod models;
 mod parser;
 mod printing;
@@ -7,8 +8,8 @@ mod storage;
 mod tray;
 mod watcher;
 
-use std::sync::Arc;
 use jobs::JobQueueState;
+use std::sync::Arc;
 use storage::StorageState;
 use tauri::Manager;
 use watcher::WatcherState;
@@ -91,6 +92,8 @@ pub fn run() {
             commands::reprint_job,
             commands::get_platform,
             commands::open_printer_dialog,
+            commands::configure_macos_printer,
+            commands::get_borderless_scale_factor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

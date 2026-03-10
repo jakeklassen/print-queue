@@ -21,8 +21,19 @@ export interface Preset {
   auto_print: boolean;
   scale_compensation: number;
   devmode_base64: string | null;
+  macos_print_info_base64: string | null;
+  macos_page_format_base64: string | null;
+  macos_print_settings_base64: string | null;
+  macos_printer_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MacOSPrintConfiguration {
+  printer_name: string;
+  print_info_base64: string;
+  page_format_base64: string;
+  print_settings_base64: string;
 }
 
 export interface PrinterInfo {

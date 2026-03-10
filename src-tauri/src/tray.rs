@@ -29,8 +29,8 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             }
             "pause" => {
                 // Toggle watcher
-                use std::sync::Arc;
                 use crate::watcher::{WatcherState, WatcherStatus};
+                use std::sync::Arc;
                 if let Some(ws) = app.try_state::<Arc<WatcherState>>() {
                     if let Ok(status) = ws.status.lock() {
                         if *status == WatcherStatus::Active {

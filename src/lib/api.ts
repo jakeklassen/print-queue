@@ -5,6 +5,7 @@ import type {
   PrinterInfo,
   PrinterCapabilities,
   PrintJob,
+  MacOSPrintConfiguration,
 } from "./types";
 
 // Config
@@ -52,3 +53,17 @@ export const getPlatform = () => invoke<string>("get_platform");
 // Printer dialog (Windows only)
 export const openPrinterDialog = (printerId: string) =>
   invoke<string>("open_printer_dialog", { printerId });
+
+export const getBorderlessScaleFactor = (
+  printerId: string,
+  paperSizeKeyword: string,
+) => invoke<number>("get_borderless_scale_factor", { printerId, paperSizeKeyword });
+
+export const configureMacosPrinter = (
+  printerId: string | null,
+  paperSizeKeyword: string | null,
+) =>
+  invoke<MacOSPrintConfiguration>("configure_macos_printer", {
+    printerId,
+    paperSizeKeyword,
+  });

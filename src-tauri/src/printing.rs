@@ -96,9 +96,7 @@ fn discover_printers_cups() -> Vec<PrinterInfo> {
         });
 
     // Get all printers via lpstat -p
-    let output = Command::new("lpstat")
-        .args(["-p"])
-        .output();
+    let output = Command::new("lpstat").args(["-p"]).output();
 
     if let Ok(out) = output {
         if out.status.success() {
@@ -167,18 +165,60 @@ pub fn get_printer_capabilities(printer_id: &str) -> PrinterCapabilities {
         _ => vec![],
     };
 
-    // Always append an orientation option (not always in lpoptions output)
-    let has_orientation = options.iter().any(|o| o.key.to_lowercase().contains("orientation"));
     let mut options = options;
+
+    // Add CUPS print-scaling option (controls image scaling before driver sees it)
+    if !options.iter().any(|o| o.key == "print-scaling") {
+        options.push(PrinterOption {
+            key: "print-scaling".to_string(),
+            label: "Image Scaling".to_string(),
+            choices: vec![
+                PrinterOptionChoice {
+                    value: "none".to_string(),
+                    label: "None (original size)".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "fit".to_string(),
+                    label: "Fit to page".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "fill".to_string(),
+                    label: "Fill page (may crop)".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "auto".to_string(),
+                    label: "Auto (CUPS default)".to_string(),
+                },
+            ],
+            default_choice: Some("none".to_string()),
+        });
+    }
+
+    // Always append an orientation option (not always in lpoptions output)
+    let has_orientation = options
+        .iter()
+        .any(|o| o.key.to_lowercase().contains("orientation"));
     if !has_orientation {
         options.push(PrinterOption {
             key: "orientation-requested".to_string(),
             label: "Orientation".to_string(),
             choices: vec![
-                PrinterOptionChoice { value: "3".to_string(), label: "Portrait".to_string() },
-                PrinterOptionChoice { value: "4".to_string(), label: "Landscape".to_string() },
-                PrinterOptionChoice { value: "5".to_string(), label: "Reverse Landscape".to_string() },
-                PrinterOptionChoice { value: "6".to_string(), label: "Reverse Portrait".to_string() },
+                PrinterOptionChoice {
+                    value: "3".to_string(),
+                    label: "Portrait".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "4".to_string(),
+                    label: "Landscape".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "5".to_string(),
+                    label: "Reverse Landscape".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "6".to_string(),
+                    label: "Reverse Portrait".to_string(),
+                },
             ],
             default_choice: Some("3".to_string()),
         });
@@ -187,9 +227,195 @@ pub fn get_printer_capabilities(printer_id: &str) -> PrinterCapabilities {
     PrinterCapabilities { options }
 }
 
+/// Vendor options that are useful and should be kept (with label mappings).
+/// All other vendor options (EPIJ_, CNIj, BR*) are filtered out.
+#[cfg(not(target_os = "windows"))]
+const VENDOR_ALLOWLIST: &[&str] = &[
+    "EPIJ_Qual",     // Print Quality
+    "EPIJ_exmg",     // Borderless Expansion
+    "EPIJ_DSPr",     // 2-sided Printing
+    "EPIJ_Silt",     // Quiet Mode
+    "EPIJ_OSColMat", // Color Matching (Vendor vs ColorSync)
+    "EPIJ_CMat",     // Color Settings (Manual/Fix Photo/Off)
+];
+
+/// Returns true for vendor-specific option keys that should be filtered out.
+/// Allowlisted vendor options are kept.
+#[cfg(not(target_os = "windows"))]
+fn is_vendor_option(key: &str) -> bool {
+    let is_vendor = key.starts_with("EPIJ_")
+        || key.starts_with("EPIJ")
+        || key.starts_with("CNIj")
+        || key.starts_with("BR");
+
+    if !is_vendor {
+        return false;
+    }
+
+    // Keep allowlisted vendor options
+    if VENDOR_ALLOWLIST
+        .iter()
+        .any(|allowed| key.starts_with(allowed))
+    {
+        return false;
+    }
+
+    true
+}
+
+/// Map Epson print quality numeric codes to human-readable names.
+/// Source: EPSON_ET_8500_Series.ppd
+#[cfg(not(target_os = "windows"))]
+fn epson_quality_label(code: &str) -> Option<&'static str> {
+    match code {
+        "302" => Some("Economy"),
+        "303" => Some("Normal"),
+        "304" => Some("Fine"),
+        "305" => Some("Quality"),
+        "306" => Some("High Quality"),
+        "307" => Some("Best Quality"),
+        "308" => Some("Draft"),
+        _ => None,
+    }
+}
+
+/// Map Epson borderless expansion values to human-readable names.
+/// Source: EPSON_ET_8500_Series.ppd — only 3 levels, all involve some expansion.
+/// Borderless always scales slightly to bleed past edges.
+#[cfg(not(target_os = "windows"))]
+fn epson_expansion_label(code: &str) -> Option<&'static str> {
+    match code {
+        "0" => Some("Min"),
+        "1" => Some("Mid"),
+        "2" => Some("Standard"),
+        _ => None,
+    }
+}
+
+/// Map common Epson on/off/mode values.
+#[cfg(not(target_os = "windows"))]
+fn epson_on_off_label(code: &str) -> Option<&'static str> {
+    match code {
+        "0" => Some("Off"),
+        "1" => Some("On"),
+        "2" => Some("On (Low Noise)"),
+        _ => None,
+    }
+}
+
+/// Map Epson ColorMatching values.
+#[cfg(not(target_os = "windows"))]
+fn epson_color_matching_label(code: &str) -> Option<&'static str> {
+    match code {
+        "1" => Some("Epson Vendor Matching"),
+        "2" => Some("ColorSync (macOS)"),
+        _ => None,
+    }
+}
+
+/// Map Epson Color Settings values.
+#[cfg(not(target_os = "windows"))]
+fn epson_color_settings_label(code: &str) -> Option<&'static str> {
+    match code {
+        "0" => Some("Manual Settings"),
+        "1" => Some("Fix Photo"),
+        "3" => Some("Off (No Color Adjustment)"),
+        _ => None,
+    }
+}
+
+/// Detect options that are slider-style ranges (many consecutive integers).
+/// These don't work well as dropdowns.
+#[cfg(not(target_os = "windows"))]
+fn is_numeric_range(choices: &[PrinterOptionChoice]) -> bool {
+    if choices.len() < 10 {
+        return false;
+    }
+    choices.iter().all(|c| c.value.parse::<i64>().is_ok())
+}
+
+/// Map Epson media type numeric codes to human-readable names.
+#[cfg(not(target_os = "windows"))]
+fn epson_media_type_label(code: &str) -> Option<&'static str> {
+    match code {
+        "0" => Some("Plain Paper"),
+        "2" => Some("Matte Paper"),
+        "12" => Some("Bright White Paper"),
+        "13" => Some("Photo Quality Ink Jet"),
+        "15" => Some("Premium Glossy Photo Paper"),
+        "26" => Some("Premium Semi-Gloss Photo Paper"),
+        "27" => Some("Ultra Premium Glossy Photo Paper"),
+        "53" => Some("Photo Paper Glossy"),
+        "92" => Some("Premium Photo Paper Glossy"),
+        "93" => Some("Premium Photo Paper Semi-Gloss"),
+        "142" => Some("Epson Premium Photo Paper Glossy"),
+        "145" => Some("Photo Quality Self-Adhesive"),
+        "159" => Some("Ultra Premium Photo Paper Luster"),
+        "160" => Some("Velvet Fine Art Paper"),
+        "187" => Some("Premium Presentation Paper Matte"),
+        _ => None,
+    }
+}
+
+/// Humanize Epson PPD page size values into readable labels.
+/// Handles patterns like "EP8x10in" → "8x10", "EPKG.NMgn" → "KG / 4x6 (Borderless)",
+/// ".NMgn" suffix → "(Borderless)", ".ManuFeedBM20mm" → "(Manual Feed)".
+#[cfg(not(target_os = "windows"))]
+fn humanize_page_size(value: &str) -> String {
+    // Detect suffixes first
+    let (base, suffix) = if let Some(b) = value.strip_suffix(".NMgn") {
+        (b, " (Borderless)")
+    } else if value.contains(".ManuFeedBM") {
+        // e.g. "A4.ManuFeedBM20mm" or "Legal.ManuFeedBM20mm"
+        let b = value.split('.').next().unwrap_or(value);
+        (b, " (Manual Feed)")
+    } else if let Some(b) = value.strip_suffix(".ManuCDR") {
+        (b, " (CD/DVD Tray)")
+    } else if let Some(b) = value.strip_suffix(".Fullbleed") {
+        (b, " (Borderless)")
+    } else {
+        (value, "")
+    };
+
+    // Map the base name to something readable
+    let readable = match base {
+        "Letter" => "Letter (8.5x11)".to_string(),
+        "Legal" => "Legal (8.5x14)".to_string(),
+        "Executive" => "Executive".to_string(),
+        "Env10" => "#10 Envelope".to_string(),
+        "A4" => "A4".to_string(),
+        "A6" => "A6".to_string(),
+        "EPKG" => "KG / 4x6".to_string(),
+        "EP8x10in" => "8x10".to_string(),
+        "EPPhotoPaper2L" => "2L / 5x7".to_string(),
+        "EPPhotoPaperLRoll" => "L Roll (3.5x5)".to_string(),
+        "EPHiVision102x180" => "Hi-Vision (4x7)".to_string(),
+        "EPHalfLetter" => "Half Letter (5.5x8.5)".to_string(),
+        "EPOficio9" => "Oficio".to_string(),
+        "EP216x330mm" => "216x330mm".to_string(),
+        "FolioSP" => "Folio".to_string(),
+        "Statement" => "Statement (5.5x8.5)".to_string(),
+        "FanFoldGermanLegal" => "Fan Fold German Legal".to_string(),
+        b if b.starts_with("Custom.") => return "Custom Size".to_string(),
+        // Generic: strip "EP" prefix and split
+        b if b.starts_with("EP") => {
+            let stripped = &b[2..];
+            // Handle dimension patterns like "8x10in", "216x330mm"
+            stripped.to_string()
+        }
+        // Standard sizes like "4x6", "5x7", "3.5x5", "8x10", "101.6x180.6mm"
+        b => b.to_string(),
+    };
+
+    format!("{}{}", readable, suffix)
+}
+
 /// Parse the output of `lpoptions -p <printer> -l`.
 /// Each line looks like:
 ///   KeyName/Display Label: choice1 *defaultChoice choice3
+///
+/// Filters out vendor-specific options that duplicate standard CUPS options,
+/// and skips large numeric ranges that should be sliders not dropdowns.
 #[cfg(not(target_os = "windows"))]
 fn parse_lpoptions(text: &str) -> Vec<PrinterOption> {
     let mut options = Vec::new();
@@ -214,26 +440,85 @@ fn parse_lpoptions(text: &str) -> Vec<PrinterOption> {
             (k, l)
         };
 
+        // Skip all vendor-specific options — they use opaque numeric codes.
+        // Standard CUPS options (PageSize, MediaType, ColorModel, Resolution, etc.)
+        // appear separately in the output with human-readable values.
+        if is_vendor_option(&key) {
+            continue;
+        }
+
+        let is_media_type = key == "MediaType";
+        let is_page_size = key == "PageSize";
+        let is_quality = key.starts_with("EPIJ_Qual");
+        let is_expansion = key.starts_with("EPIJ_exmg");
+        let is_vendor_bool = key.starts_with("EPIJ_DSPr") || key.starts_with("EPIJ_Silt");
+        let is_color_matching = key.starts_with("EPIJ_OSColMat");
+        let is_color_settings = key.starts_with("EPIJ_CMat");
+        let has_label_mapping = is_media_type
+            || is_quality
+            || is_expansion
+            || is_vendor_bool
+            || is_color_matching
+            || is_color_settings;
+
         let mut choices = Vec::new();
         let mut default_choice = None;
 
         for token in choices_part.split_whitespace() {
-            if let Some(stripped) = token.strip_prefix('*') {
-                default_choice = Some(stripped.to_string());
-                choices.push(PrinterOptionChoice {
-                    value: stripped.to_string(),
-                    label: humanize_choice_value(stripped),
-                });
+            let (value, is_default) = if let Some(stripped) = token.strip_prefix('*') {
+                (stripped, true)
             } else {
-                choices.push(PrinterOptionChoice {
-                    value: token.to_string(),
-                    label: humanize_choice_value(token),
-                });
+                (token, false)
+            };
+
+            let display_label = if is_media_type {
+                epson_media_type_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else if is_page_size {
+                humanize_page_size(value)
+            } else if is_quality {
+                epson_quality_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else if is_expansion {
+                epson_expansion_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else if is_vendor_bool {
+                epson_on_off_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else if is_color_matching {
+                epson_color_matching_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else if is_color_settings {
+                epson_color_settings_label(value)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| humanize_choice_value(value))
+            } else {
+                humanize_choice_value(value)
+            };
+
+            if is_default {
+                default_choice = Some(value.to_string());
             }
+
+            choices.push(PrinterOptionChoice {
+                value: value.to_string(),
+                label: display_label,
+            });
         }
 
         // Skip options with only one choice (not useful to configure)
         if choices.len() <= 1 && key != "PageSize" {
+            continue;
+        }
+
+        // Skip slider-style numeric ranges (Brightness -25..25, etc.)
+        // But exempt options that have label mappings (MediaType, Quality, etc.)
+        if !has_label_mapping && is_numeric_range(&choices) {
             continue;
         }
 
@@ -324,16 +609,22 @@ try {{
     };
 
     // Always include orientation
-    let has_orientation = options.iter().any(|o| {
-        o.key.to_lowercase().contains("orientation")
-    });
+    let has_orientation = options
+        .iter()
+        .any(|o| o.key.to_lowercase().contains("orientation"));
     if !has_orientation {
         options.push(PrinterOption {
             key: "psk:PageOrientation".to_string(),
             label: "Orientation".to_string(),
             choices: vec![
-                PrinterOptionChoice { value: "psk:Portrait".to_string(), label: "Portrait".to_string() },
-                PrinterOptionChoice { value: "psk:Landscape".to_string(), label: "Landscape".to_string() },
+                PrinterOptionChoice {
+                    value: "psk:Portrait".to_string(),
+                    label: "Portrait".to_string(),
+                },
+                PrinterOptionChoice {
+                    value: "psk:Landscape".to_string(),
+                    label: "Landscape".to_string(),
+                },
             ],
             default_choice: Some("psk:Portrait".to_string()),
         });
@@ -377,7 +668,8 @@ fn parse_windows_capabilities(text: &str) -> Vec<PrinterOption> {
         } else if let Some(prop_str) = line.strip_prefix("PROP:") {
             // Fallback: Get-PrinterProperty format "Name=Value"
             if let Some((name, value)) = prop_str.split_once('=') {
-                prop_map.entry(name.to_string())
+                prop_map
+                    .entry(name.to_string())
                     .or_default()
                     .push(value.to_string());
             }

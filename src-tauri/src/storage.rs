@@ -14,10 +14,10 @@ impl StorageState {
     pub fn new(data_dir: PathBuf) -> Self {
         fs::create_dir_all(&data_dir).ok();
 
-        let config = Self::load_json::<AppConfig>(&data_dir.join("config.json"))
-            .unwrap_or_default();
-        let presets = Self::load_json::<Vec<Preset>>(&data_dir.join("presets.json"))
-            .unwrap_or_default();
+        let config =
+            Self::load_json::<AppConfig>(&data_dir.join("config.json")).unwrap_or_default();
+        let presets =
+            Self::load_json::<Vec<Preset>>(&data_dir.join("presets.json")).unwrap_or_default();
 
         Self {
             config: Mutex::new(config),

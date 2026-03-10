@@ -37,7 +37,8 @@ import {
   getConfig,
   saveConfig,
 } from "@/lib/api";
-import type { AppConfig, Preset, PrintSettings } from "@/lib/types";
+import type { PresetFormData } from "@/components/preset-form";
+import type { AppConfig, Preset } from "@/lib/types";
 
 export function PresetsPage() {
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -55,15 +56,7 @@ export function PresetsPage() {
     refresh();
   }, []);
 
-  const handleCreate = async (data: {
-    name: string;
-    printer_id: string | null;
-    paper_size_keyword: string;
-    settings: PrintSettings;
-    copies: number;
-    auto_print: boolean;
-    devmode_base64: string | null;
-  }) => {
+  const handleCreate = async (data: PresetFormData) => {
     const preset = await createPreset(data.name, data.paper_size_keyword);
     const updated: Preset = {
       ...preset,
@@ -71,22 +64,19 @@ export function PresetsPage() {
       settings: data.settings,
       copies: data.copies,
       auto_print: data.auto_print,
+      scale_compensation: data.scale_compensation,
       devmode_base64: data.devmode_base64,
+      macos_print_info_base64: data.macos_print_info_base64,
+      macos_page_format_base64: data.macos_page_format_base64,
+      macos_print_settings_base64: data.macos_print_settings_base64,
+      macos_printer_name: data.macos_printer_name,
     };
     await updatePreset(updated);
     setShowCreate(false);
     refresh();
   };
 
-  const handleUpdate = async (data: {
-    name: string;
-    printer_id: string | null;
-    paper_size_keyword: string;
-    settings: PrintSettings;
-    copies: number;
-    auto_print: boolean;
-    devmode_base64: string | null;
-  }) => {
+  const handleUpdate = async (data: PresetFormData) => {
     if (!editingPreset) return;
     const updated: Preset = {
       ...editingPreset,
@@ -96,7 +86,12 @@ export function PresetsPage() {
       settings: data.settings,
       copies: data.copies,
       auto_print: data.auto_print,
+      scale_compensation: data.scale_compensation,
       devmode_base64: data.devmode_base64,
+      macos_print_info_base64: data.macos_print_info_base64,
+      macos_page_format_base64: data.macos_page_format_base64,
+      macos_print_settings_base64: data.macos_print_settings_base64,
+      macos_printer_name: data.macos_printer_name,
       updated_at: new Date().toISOString(),
     };
     await updatePreset(updated);
@@ -115,7 +110,12 @@ export function PresetsPage() {
       settings: { ...preset.settings },
       copies: preset.copies,
       auto_print: preset.auto_print,
+      scale_compensation: preset.scale_compensation,
       devmode_base64: preset.devmode_base64,
+      macos_print_info_base64: preset.macos_print_info_base64,
+      macos_page_format_base64: preset.macos_page_format_base64,
+      macos_print_settings_base64: preset.macos_print_settings_base64,
+      macos_printer_name: preset.macos_printer_name,
     };
     await updatePreset(duplicated);
     refresh();
