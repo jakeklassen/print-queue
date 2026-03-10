@@ -30,7 +30,6 @@ pub struct MacOSPrintConfiguration {
 
 #[cfg(target_os = "macos")]
 struct MacOSSampleContext {
-    sample_file: Option<PathBuf>,
     paper_size_points: Option<(f64, f64)>,
 }
 
@@ -171,10 +170,6 @@ pub fn configure_printer(
         args.push(String::from("--printer"));
         args.push(printer_hint.to_string());
     }
-    if let Some(sample_file) = sample.sample_file {
-        args.push(String::from("--sample-file"));
-        args.push(sample_file.display().to_string());
-    }
     if let Some((width, height)) = sample.paper_size_points {
         args.push(String::from("--paper-width"));
         args.push(width.to_string());
@@ -236,17 +231,6 @@ pub fn print_file(app: &AppHandle, file_path: &Path, preset: &Preset) -> Result<
 #[cfg(target_os = "macos")]
 fn sample_context_for_keyword(keyword: Option<&str>) -> MacOSSampleContext {
     let normalized = keyword.unwrap_or("").trim().to_lowercase();
-    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .map(Path::to_path_buf)
-        .unwrap_or_else(|| PathBuf::from("."));
-
-    let sample_file = match normalized.as_str() {
-        "4x6" | "kg" | "4r" => Some(repo_root.join("public/4x6.jpg")),
-        _ => None,
-    }
-    .filter(|path| path.exists());
-
     let paper_size_points = match normalized.as_str() {
         "4x6" | "kg" | "4r" => Some((288.0, 432.0)),
         "5x7" | "5r" | "2l" => Some((360.0, 504.0)),
@@ -260,7 +244,6 @@ fn sample_context_for_keyword(keyword: Option<&str>) -> MacOSSampleContext {
     };
 
     MacOSSampleContext {
-        sample_file,
         paper_size_points,
     }
 }

@@ -29,60 +29,6 @@ struct ConfigureResponse: Codable {
     }
 }
 
-final class ImagePrintView: NSView {
-    private let image: NSImage
-    private let scale: CGFloat
-
-    init(image: NSImage, frame: NSRect, scale: CGFloat = 1.0) {
-        self.image = image
-        self.scale = scale
-        super.init(frame: frame)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override var isFlipped: Bool { true }
-
-    override func knowsPageRange(_ range: NSRangePointer) -> Bool {
-        range.pointee = NSRange(location: 1, length: 1)
-        return true
-    }
-
-    override func rectForPage(_ page: Int) -> NSRect {
-        bounds
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        NSColor.white.setFill()
-        dirtyRect.fill()
-
-        let drawRect: NSRect
-        if scale < 1.0 {
-            // Shrink image and center it to compensate for CUPS borderless expansion
-            let scaledWidth = bounds.width * scale
-            let scaledHeight = bounds.height * scale
-            let offsetX = (bounds.width - scaledWidth) / 2.0
-            let offsetY = (bounds.height - scaledHeight) / 2.0
-            drawRect = NSRect(x: offsetX, y: offsetY, width: scaledWidth, height: scaledHeight)
-        } else {
-            drawRect = bounds
-        }
-
-        image.draw(
-            in: drawRect,
-            from: .zero,
-            operation: .copy,
-            fraction: 1.0,
-            respectFlipped: true,
-            hints: [
-                .interpolation: NSImageInterpolation.high
-            ]
-        )
-    }
-}
-
 enum HelperError: Error, CustomStringConvertible {
     case message(String)
 
@@ -217,7 +163,6 @@ func configure(arguments: [String], printerHint: String?) throws {
     app.setActivationPolicy(.accessory)
     app.activate(ignoringOtherApps: true)
 
-    let samplePath = parseFlag("--sample-file", in: arguments)
     let paperWidth = Double(parseFlag("--paper-width", in: arguments) ?? "")
     let paperHeight = Double(parseFlag("--paper-height", in: arguments) ?? "")
     let explicitPaperSize: NSSize? = {
@@ -296,53 +241,6 @@ func configure(arguments: [String], printerHint: String?) throws {
     )
 }
 
-func printImage(
-    filePath: String,
-    copies: Int,
-    printInfoBase64: String,
-    pageFormatBase64: String?,
-    printSettingsBase64: String?,
-    printerName: String?,
-    scale: Double
-) throws {
-    let app = NSApplication.shared
-    app.setActivationPolicy(.accessory)
-
-    let image = NSImage(contentsOfFile: filePath)
-    guard let image else {
-        throw HelperError.message("Could not load image at \(filePath)")
-    }
-
-    let printInfo = try restorePrintInfo(from: printInfoBase64)
-    try applyPMState(
-        printInfo: printInfo,
-        pageFormatBase64: pageFormatBase64,
-        printSettingsBase64: printSettingsBase64
-    )
-    printInfo.jobDisposition = .spool
-    printInfo.dictionary()[NSPrintInfo.AttributeKey.copies] = NSNumber(value: max(1, copies))
-    printInfo.dictionary()[NSPrintInfo.AttributeKey.detailedErrorReporting] = NSNumber(value: true)
-    logPrintSettings("restored", printInfo: printInfo)
-
-    if let printerName, let printer = NSPrinter(name: printerName) {
-        printInfo.printer = printer
-        printInfo.dictionary()[NSPrintInfo.AttributeKey.printerName] = printer.name
-    }
-
-    let view = ImagePrintView(
-        image: image,
-        frame: NSRect(origin: .zero, size: printInfo.paperSize),
-        scale: CGFloat(scale)
-    )
-    let operation = NSPrintOperation(view: view, printInfo: printInfo)
-    operation.showsPrintPanel = false
-    operation.showsProgressPanel = false
-
-    guard operation.run() else {
-        throw HelperError.message("macOS print operation failed")
-    }
-}
-
 func printPDF(
     filePath: String,
     copies: Int,
@@ -412,29 +310,19 @@ do {
             throw HelperError.message("Missing --print-info-b64")
         }
         let copies = Int(parseFlag("--copies", in: arguments) ?? "1") ?? 1
-        let scale = Double(parseFlag("--scale", in: arguments) ?? "1.0") ?? 1.0
         let pageFormatBase64 = parseFlag("--page-format-b64", in: arguments)
         let printSettingsBase64 = parseFlag("--print-settings-b64", in: arguments)
-        if filePath.lowercased().hasSuffix(".pdf") {
-            try printPDF(
-                filePath: filePath,
-                copies: copies,
-                printInfoBase64: printInfoBase64,
-                pageFormatBase64: pageFormatBase64,
-                printSettingsBase64: printSettingsBase64,
-                printerName: parseFlag("--printer", in: arguments)
-            )
-        } else {
-            try printImage(
-                filePath: filePath,
-                copies: copies,
-                printInfoBase64: printInfoBase64,
-                pageFormatBase64: pageFormatBase64,
-                printSettingsBase64: printSettingsBase64,
-                printerName: parseFlag("--printer", in: arguments),
-                scale: scale
-            )
+        if !filePath.lowercased().hasSuffix(".pdf") {
+            throw HelperError.message("macOS helper expects a wrapped PDF print file")
         }
+        try printPDF(
+            filePath: filePath,
+            copies: copies,
+            printInfoBase64: printInfoBase64,
+            pageFormatBase64: pageFormatBase64,
+            printSettingsBase64: printSettingsBase64,
+            printerName: parseFlag("--printer", in: arguments)
+        )
     default:
         throw HelperError.message("Unknown helper command: \(command)")
     }

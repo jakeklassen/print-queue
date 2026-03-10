@@ -8,7 +8,6 @@ import { PrinterSelector } from "@/components/printer-selector";
 import { CapabilitiesForm } from "@/components/capabilities-form";
 import {
   configureMacosPrinter,
-  getBorderlessScaleFactor,
   getPlatform,
   openPrinterDialog,
 } from "@/lib/api";
@@ -161,20 +160,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       return;
     }
 
-    if (checked && macosPrinterName) {
-      try {
-        const factor = await getBorderlessScaleFactor(
-          macosPrinterName,
-          paperSizeKeyword,
-        );
-        if (factor > 1.0) {
-          const compensation = 1.0 / factor;
-          setScaleCompensation(compensation);
-        }
-      } catch (err) {
-        console.error("Failed to get borderless scale factor:", err);
-      }
-    } else if (!checked) {
+    if (!checked) {
       setScaleCompensation(1.0);
     }
   };
@@ -335,10 +321,10 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
               checked={retainSize}
               onCheckedChange={handleRetainSizeToggle}
             />
-            <Label htmlFor="retain-size">Retain original size (disable borderless expansion)</Label>
+            <Label htmlFor="retain-size">Retain original size</Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            Compensates for CUPS borderless scaling that enlarges prints beyond their intended size.
+            Uses a saved macOS calibration factor for this preset to keep the printed size consistent.
             {retainSize && scaleCompensation < 1.0 && (
               <> Scale factor: {(scaleCompensation * 100).toFixed(1)}%</>
             )}
@@ -406,8 +392,8 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
             }}
           />
           <p className="text-xs text-muted-foreground">
-            macOS-native size calibration applied to the wrapped PDF content before printing.
-            Start around {DEFAULT_MACOS_NATIVE_SCALE.toFixed(4)} and tune per preset if needed.
+            Saved per-preset macOS size calibration applied to the wrapped PDF content before printing.
+            Start around {DEFAULT_MACOS_NATIVE_SCALE.toFixed(4)} and tune once for each printer and paper workflow if needed.
           </p>
         </div>
       )}
