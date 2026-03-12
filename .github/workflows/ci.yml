@@ -22,10 +22,4 @@ jobs:
 
       - run: pnpm install
 
-      - run: pnpm lint
-
-      - run: pnpm lint:css
-
-      - run: pnpm fmt:check
-
-      - run: pnpm build
+      - run: pnpm check
