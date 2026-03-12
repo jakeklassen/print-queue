@@ -24,6 +24,7 @@ export function PrinterSelector({
 
   const fetchPrinters = async () => {
     setLoading(true);
+
     try {
       const result = await listPrinters();
       setPrinters(result);

@@ -34,30 +34,36 @@ All 8 phases from the implementation plan are complete. The app compiles, runs, 
 ## Known Issues on Windows
 
 ### 1. Print Scaling (UNRESOLVED)
+
 The printed output is "blown up" — image doesn't match the selected paper size (e.g., 4x6 borderless). The DEVMODE is applied to `PrintDocument` via `PrintTicketConverter` → `SetHdevmode()`, but it's unclear whether `PageBounds` in the `PrintPage` event actually reflects the custom paper size or defaults to Letter.
 
 **Current state:** The `PrintPage` handler draws the image to fill `PageBounds` with no additional scaling. This should be correct IF the DEVMODE is properly setting the paper size. Needs further testing.
 
 **Possible causes:**
+
 - `PrintDocument.DefaultPageSettings.PaperSize.PaperName` still reports "Letter" after DEVMODE application (observed in testing), suggesting the .NET PaperSize object may not reflect vendor-specific sizes
 - The DEVMODE may contain the correct size internally for the driver, but `PageBounds` might not update accordingly
 - The `PrintTicketConverter.ConvertPrintTicketToDevMode()` might not be preserving vendor-specific (`ns0000:`) settings
 
 **Potential fix directions:**
+
 - Test whether `PageBounds` actually changes after DEVMODE for vendor paper sizes
 - Consider setting `PrintDocument.DefaultPageSettings.PaperSize` explicitly by matching dimensions
 - Consider bypassing `PrintDocument` entirely and using `PrintQueue.AddJob()` with an XPS document + PrintTicket (avoids the DEVMODE bridge entirely)
 - On macOS, `lp -o PageSize=...` should just work
 
 ### 2. PowerShell Window Flashing (FIXED)
+
 **Problem:** `powershell -WindowStyle Hidden` only minimizes the window, doesn't prevent it from appearing.
 **Fix:** Use `CREATE_NO_WINDOW` (0x08000000) process creation flag via `CommandExt::creation_flags()`.
 
 ### 3. PrintTicketConverter Assembly (FIXED)
+
 **Problem:** `System.Printing.Interop.PrintTicketConverter` was not found when loading only `System.Printing`.
 **Fix:** Also load `ReachFramework` assembly — that's where the interop class actually lives.
 
 ### 4. Close-to-Tray Not Working (FIXED)
+
 **Problem:** `api.prevent_close()` was called but the window was never hidden.
 **Fix:** Clone the window handle and call `window_for_close.hide()` after preventing close.
 
@@ -89,21 +95,22 @@ Run via: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File <sc
 
 ### Crates and APIs Tried
 
-| Approach | Status | Notes |
-|----------|--------|-------|
-| `printers` crate v2 (`Printer::print()`) | Works for basic print | Cannot pass custom settings (paper size, media type, etc). `PrinterJobOptions` is too limited. Also, `sha2::Digest` trait conflicts with `printers` types — use `PrinterJobOptions::none()` and `format!("{:?}", e)` for `PrintersError`. |
-| `Start-Process -Verb Print` | Abandoned | Opens the default app's print dialog — not headless |
-| `Start-Process -Verb PrintTo` | Not tried | Uses shell association — limited control over settings |
-| PowerShell `System.Drawing.Printing.PrintDocument` | Current approach | Standard .NET print API. Works but requires DEVMODE bridging for custom settings. |
-| PowerShell Print Ticket XML manipulation | Current approach | Works for modifying ticket XML. Vendor namespaces (`ns0000:`) need special handling. |
-| `PrintTicketConverter` (DEVMODE bridge) | Current approach | Lives in `ReachFramework` assembly (not `System.Printing`). Converts validated PrintTicket → DEVMODE bytes. |
-| P/Invoke `GlobalAlloc`/`SetHdevmode` | Current approach | Bridges DEVMODE bytes into `PrinterSettings`/`PageSettings`. The DEVMODE is applied but .NET `PaperSize.PaperName` may not reflect vendor sizes. |
-| `PrintQueue.AddJob()` with XPS | Not tried | Would bypass PrintDocument/DEVMODE entirely. More complex (need to create XPS doc with WPF) but might handle settings more reliably. |
-| `winprint` crate | Not tried | Mentioned in PRD as option but not used. |
+| Approach                                           | Status                | Notes                                                                                                                                                                                                                                     |
+| -------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `printers` crate v2 (`Printer::print()`)           | Works for basic print | Cannot pass custom settings (paper size, media type, etc). `PrinterJobOptions` is too limited. Also, `sha2::Digest` trait conflicts with `printers` types — use `PrinterJobOptions::none()` and `format!("{:?}", e)` for `PrintersError`. |
+| `Start-Process -Verb Print`                        | Abandoned             | Opens the default app's print dialog — not headless                                                                                                                                                                                       |
+| `Start-Process -Verb PrintTo`                      | Not tried             | Uses shell association — limited control over settings                                                                                                                                                                                    |
+| PowerShell `System.Drawing.Printing.PrintDocument` | Current approach      | Standard .NET print API. Works but requires DEVMODE bridging for custom settings.                                                                                                                                                         |
+| PowerShell Print Ticket XML manipulation           | Current approach      | Works for modifying ticket XML. Vendor namespaces (`ns0000:`) need special handling.                                                                                                                                                      |
+| `PrintTicketConverter` (DEVMODE bridge)            | Current approach      | Lives in `ReachFramework` assembly (not `System.Printing`). Converts validated PrintTicket → DEVMODE bytes.                                                                                                                               |
+| P/Invoke `GlobalAlloc`/`SetHdevmode`               | Current approach      | Bridges DEVMODE bytes into `PrinterSettings`/`PageSettings`. The DEVMODE is applied but .NET `PaperSize.PaperName` may not reflect vendor sizes.                                                                                          |
+| `PrintQueue.AddJob()` with XPS                     | Not tried             | Would bypass PrintDocument/DEVMODE entirely. More complex (need to create XPS doc with WPF) but might handle settings more reliably.                                                                                                      |
+| `winprint` crate                                   | Not tried             | Mentioned in PRD as option but not used.                                                                                                                                                                                                  |
 
 ### Epson ET-8500 Specifics (Windows)
 
 Discovered via `System.Printing.PrintCapabilities`:
+
 - **4x6 paper:** `ns0000:Fullsize4x6` (standard), probably a `Fullbleed` variant for borderless
 - **Rear feed (with backing support):** `ns0000:AutoSheetFeeder`
 - **Rear single-sheet slot:** `ns0000:RearManualFeeder`
@@ -128,6 +135,7 @@ cmd.arg(file_path);
 Capabilities are queried via `lpoptions -p <printer> -l` which returns all options with their choices and defaults. Settings map directly to `-o key=value` on the `lp` command. No DEVMODE, no Print Ticket XML, no P/Invoke.
 
 **Expected macOS issues:** None architectural — CUPS is well-documented and the `lp` command handles settings natively. May need to test:
+
 - Whether the `printers` crate works on macOS for discovery (it should)
 - Whether `lpoptions` output parsing handles all printer types
 - Orientation handling (already added as a synthetic option if not in `lpoptions` output)
@@ -180,6 +188,7 @@ PRD.md                            # Full product requirements
 ## Key Dependencies
 
 ### Rust (Cargo.toml)
+
 - `tauri` 2 (with `tray-icon`, `image-png` features)
 - `tauri-plugin-dialog` 2, `tauri-plugin-notification` 2, `tauri-plugin-opener` 2
 - `printers` 2 — cross-platform printer enumeration
@@ -191,6 +200,7 @@ PRD.md                            # Full product requirements
 - `uuid` 1 + `chrono` 0.4 — IDs and timestamps
 
 ### Frontend (package.json)
+
 - React 19, TypeScript, Vite 7
 - Tailwind CSS v4 + `@tailwindcss/vite`
 - shadcn/ui components (new-york style, neutral base color)
@@ -200,6 +210,7 @@ PRD.md                            # Full product requirements
 ## Data Storage
 
 JSON files in Tauri app data directory:
+
 - `config.json` — `AppConfig` (watch folder, tray behavior, default preset, post-file actions)
 - `presets.json` — `Vec<Preset>` (name, printer, keyword, settings HashMap, copies, auto-print)
 

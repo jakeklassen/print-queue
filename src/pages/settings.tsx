@@ -24,7 +24,14 @@ import { getConfig, saveConfig, startWatcher, getPlatform } from "@/lib/api";
 import { getVersion } from "@tauri-apps/api/app";
 import type { AppConfig, PostFileAction } from "@/lib/types";
 
-type UpdateState = "idle" | "checking" | "available" | "downloading" | "ready" | "up-to-date" | "error";
+type UpdateState =
+  | "idle"
+  | "checking"
+  | "available"
+  | "downloading"
+  | "ready"
+  | "up-to-date"
+  | "error";
 
 export function SettingsPage() {
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -44,8 +51,10 @@ export function SettingsPage() {
   const handleCheckUpdate = async () => {
     setUpdateState("checking");
     setUpdateProgress("");
+
     try {
       const update = await check();
+
       if (update) {
         setUpdateRef(update);
         setUpdateVersion(update.version);
@@ -61,8 +70,12 @@ export function SettingsPage() {
   };
 
   const handleInstallUpdate = async () => {
-    if (!updateRef) return;
+    if (!updateRef) {
+      return;
+    }
+
     setUpdateState("downloading");
+
     try {
       let totalLength = 0;
       let downloaded = 0;
@@ -74,10 +87,12 @@ export function SettingsPage() {
             break;
           case "Progress":
             downloaded += event.data.chunkLength;
+
             if (totalLength > 0) {
               const pct = Math.round((downloaded / totalLength) * 100);
               setUpdateProgress(`Downloading... ${pct}%`);
             }
+
             break;
           case "Finished":
             setUpdateProgress("Restart the app to apply the update");
@@ -97,19 +112,26 @@ export function SettingsPage() {
   }, []);
 
   const update = (partial: Partial<AppConfig>) => {
-    if (!config) return;
+    if (!config) {
+      return;
+    }
+
     setConfig({ ...config, ...partial });
     setDirty(true);
   };
 
   const handleSave = async () => {
-    if (!config) return;
+    if (!config) {
+      return;
+    }
+
     await saveConfig(config);
     setDirty(false);
   };
 
   const handleSelectFolder = async () => {
     const folder = await open({ directory: true });
+
     if (folder && config) {
       const newConfig: AppConfig = { ...config, watch_folder: folder };
       await saveConfig(newConfig);
@@ -119,7 +141,9 @@ export function SettingsPage() {
     }
   };
 
-  if (!config) return null;
+  if (!config) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
@@ -234,7 +258,8 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">About</CardTitle>
           <CardDescription>
-            PrintQueue v{appVersion}{platform ? ` (${platform})` : ""}
+            PrintQueue v{appVersion}
+            {platform ? ` (${platform})` : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -257,7 +282,11 @@ export function SettingsPage() {
                   <Check className="h-4 w-4" />
                   You're on the latest version
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => setUpdateState("idle")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUpdateState("idle")}
+                >
                   Check again
                 </Button>
               </div>
@@ -282,8 +311,14 @@ export function SettingsPage() {
             )}
             {updateState === "error" && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-destructive">{updateProgress}</span>
-                <Button variant="ghost" size="sm" onClick={() => setUpdateState("idle")}>
+                <span className="text-sm text-destructive">
+                  {updateProgress}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUpdateState("idle")}
+                >
                   Retry
                 </Button>
               </div>

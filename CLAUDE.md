@@ -60,6 +60,7 @@ Printing uses a unified Rust trait (`PrintService`) with platform-specific imple
 ### Two-Stage Pipeline
 
 The core processing flow:
+
 1. **Stage 1 — Zip extraction:** `.zip` detected in watch folder → extract images into watch folder → done
 2. **Stage 2 — Image routing:** `.jpg/.png/.tiff` detected → parse filename for size keywords → match to preset → print
 

@@ -65,7 +65,12 @@ export interface PrinterCapabilities {
   options: PrinterOption[];
 }
 
-export type JobStatus = "pending" | "printing" | "complete" | "error" | "skipped";
+export type JobStatus =
+  | "pending"
+  | "printing"
+  | "complete"
+  | "error"
+  | "skipped";
 
 export interface PrintJob {
   id: string;

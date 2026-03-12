@@ -57,7 +57,11 @@ export const openPrinterDialog = (printerId: string) =>
 export const getBorderlessScaleFactor = (
   printerId: string,
   paperSizeKeyword: string,
-) => invoke<number>("get_borderless_scale_factor", { printerId, paperSizeKeyword });
+) =>
+  invoke<number>("get_borderless_scale_factor", {
+    printerId,
+    paperSizeKeyword,
+  });
 
 export const configureMacosPrinter = (
   printerId: string | null,

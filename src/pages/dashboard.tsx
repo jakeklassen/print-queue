@@ -73,6 +73,7 @@ export function DashboardPage() {
 
   const handleSelectFolder = async () => {
     const folder = await open({ directory: true });
+
     if (folder && config) {
       const newConfig: AppConfig = { ...config, watch_folder: folder };
       await saveConfig(newConfig);
@@ -87,6 +88,7 @@ export function DashboardPage() {
     } else if (config?.watch_folder) {
       await startWatcher(config.watch_folder);
     }
+
     refresh();
   };
 

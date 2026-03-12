@@ -19,7 +19,11 @@ import type { PrintJob, JobStatus } from "@/lib/types";
 
 const statusConfig: Record<
   JobStatus,
-  { icon: React.ElementType; label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+  {
+    icon: React.ElementType;
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+  }
 > = {
   pending: { icon: Clock, label: "Pending", variant: "secondary" },
   printing: { icon: Loader2, label: "Printing", variant: "default" },
@@ -44,9 +48,7 @@ export function QueuePage() {
     refresh();
     const interval = setInterval(refresh, 2000);
 
-    const unlisteners = [
-      listen("job-updated", () => refresh()),
-    ];
+    const unlisteners = [listen("job-updated", () => refresh())];
 
     return () => {
       clearInterval(interval);
@@ -73,7 +75,8 @@ export function QueuePage() {
     (j) => j.status === "pending" || j.status === "printing",
   );
   const completedJobs = jobs.filter(
-    (j) => j.status === "complete" || j.status === "error" || j.status === "skipped",
+    (j) =>
+      j.status === "complete" || j.status === "error" || j.status === "skipped",
   );
 
   return (

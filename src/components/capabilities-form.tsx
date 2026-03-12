@@ -20,8 +20,9 @@ export function CapabilitiesForm({
   settings: PrintSettings;
   onChange: (settings: PrintSettings) => void;
 }) {
-  const [capabilities, setCapabilities] =
-    useState<PrinterCapabilities | null>(null);
+  const [capabilities, setCapabilities] = useState<PrinterCapabilities | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export function CapabilitiesForm({
       setCapabilities(null);
       return;
     }
+
     setLoading(true);
     getPrinterCapabilities(printerId)
       .then((caps) => {
@@ -36,12 +38,14 @@ export function CapabilitiesForm({
         // Pre-fill defaults for any option not already set
         const updated = { ...settings };
         let changed = false;
+
         for (const opt of caps.options) {
           if (!updated[opt.key] && opt.default_choice) {
             updated[opt.key] = opt.default_choice;
             changed = true;
           }
         }
+
         if (changed) {
           onChange(updated);
         }
@@ -80,11 +84,15 @@ export function CapabilitiesForm({
         <div key={option.key} className="grid gap-1.5">
           <Label className="text-sm flex items-center gap-2">
             {option.label}
-            {option.default_choice && settings[option.key] === option.default_choice && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 font-normal">
-                default
-              </Badge>
-            )}
+            {option.default_choice &&
+              settings[option.key] === option.default_choice && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1 py-0 font-normal"
+                >
+                  default
+                </Badge>
+              )}
           </Label>
           <Select
             value={settings[option.key] ?? ""}
@@ -93,7 +101,9 @@ export function CapabilitiesForm({
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder={`Select ${option.label.toLowerCase()}...`} />
+              <SelectValue
+                placeholder={`Select ${option.label.toLowerCase()}...`}
+              />
             </SelectTrigger>
             <SelectContent>
               {option.choices.map((choice) => (
