@@ -54,9 +54,9 @@ export function SettingsPage() {
         setUpdateState("up-to-date");
       }
     } catch (e) {
-      console.error("Update check failed:", e);
-      setUpdateState("error");
-      setUpdateProgress(e instanceof Error ? e.message : "Check failed");
+      // No releases yet or network error — treat as up-to-date
+      console.debug("Update check:", e);
+      setUpdateState("up-to-date");
     }
   };
 
