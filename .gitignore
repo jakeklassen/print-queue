@@ -26,3 +26,6 @@ tmp/
 
 # Signing keys
 .keys/
+
+# Compiled macOS helper (built during cargo build)
+src-tauri/macos-helper/printqueue-macos-helper
