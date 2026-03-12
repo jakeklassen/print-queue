@@ -60,6 +60,8 @@ pub struct Preset {
     pub macos_page_width_points: Option<f64>,
     #[serde(default)]
     pub macos_page_height_points: Option<f64>,
+    #[serde(default)]
+    pub macos_size_compensation_mm: Option<f64>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -83,6 +85,7 @@ impl Preset {
             macos_printer_name: None,
             macos_page_width_points: None,
             macos_page_height_points: None,
+            macos_size_compensation_mm: None,
             created_at: now,
             updated_at: now,
         }

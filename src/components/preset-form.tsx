@@ -14,7 +14,6 @@ import {
 import type { Preset, PrintSettings } from "@/lib/types";
 
 const DEFAULT_SETTINGS: PrintSettings = {};
-const DEFAULT_MACOS_NATIVE_SCALE = 0.9767;
 
 export interface PresetFormData {
   name: string;
@@ -31,6 +30,7 @@ export interface PresetFormData {
   macos_printer_name: string | null;
   macos_page_width_points: number | null;
   macos_page_height_points: number | null;
+  macos_size_compensation_mm: number | null;
 }
 
 interface PresetFormProps {
@@ -40,6 +40,23 @@ interface PresetFormProps {
 }
 
 export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
+  const deriveMacosCompensationMm = (value?: Preset) => {
+    if (value?.macos_size_compensation_mm != null) {
+      return value.macos_size_compensation_mm;
+    }
+
+    if (
+      value?.macos_page_width_points &&
+      value.scale_compensation > 0 &&
+      value.scale_compensation < 0.999
+    ) {
+      const pageWidthMm = (value.macos_page_width_points / 72) * 25.4;
+      return (pageWidthMm * value.scale_compensation) - pageWidthMm;
+    }
+
+    return 0;
+  };
+
   const [name, setName] = useState(preset?.name ?? "");
   const [printerId, setPrinterId] = useState<string | null>(
     preset?.printer_id ?? null,
@@ -73,11 +90,11 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   const [macosPageHeightPoints, setMacosPageHeightPoints] = useState<number | null>(
     preset?.macos_page_height_points ?? null,
   );
-  const [scaleCompensation, setScaleCompensation] = useState(
-    preset?.scale_compensation ?? 1.0,
+  const [macosSizeCompensationMm, setMacosSizeCompensationMm] = useState<number>(
+    deriveMacosCompensationMm(preset),
   );
-  const [retainSize, setRetainSize] = useState(
-    (preset?.scale_compensation ?? 1.0) < 1.0,
+  const [scaleCompensation] = useState(
+    preset?.scale_compensation ?? 1.0,
   );
   const [platform, setPlatform] = useState<string>("unknown");
   const [dialogLoading, setDialogLoading] = useState(false);
@@ -161,20 +178,6 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
     }
   };
 
-  const handleRetainSizeToggle = async (checked: boolean) => {
-    setRetainSize(checked);
-    if (checked && isMacos) {
-      setScaleCompensation((current) =>
-        current < 1.0 ? current : DEFAULT_MACOS_NATIVE_SCALE,
-      );
-      return;
-    }
-
-    if (!checked) {
-      setScaleCompensation(1.0);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isMacos && !hasMacosNativeConfig) {
@@ -190,7 +193,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       settings,
       copies,
       auto_print: autoPrint,
-      scale_compensation: scaleCompensation,
+      scale_compensation: isMacos ? 1.0 : scaleCompensation,
       devmode_base64: devmodeBase64,
       macos_print_info_base64: macosPrintInfoBase64,
       macos_page_format_base64: macosPageFormatBase64,
@@ -198,6 +201,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       macos_printer_name: macosPrinterName,
       macos_page_width_points: macosPageWidthPoints,
       macos_page_height_points: macosPageHeightPoints,
+      macos_size_compensation_mm: isMacos ? macosSizeCompensationMm : null,
     });
   };
 
@@ -330,19 +334,20 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
 
       {isMacos && macosPrintInfoBase64 && (
         <div className="grid gap-1.5">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="retain-size"
-              checked={retainSize}
-              onCheckedChange={handleRetainSizeToggle}
-            />
-            <Label htmlFor="retain-size">Retain original size</Label>
-          </div>
+          <Label htmlFor="macos-size-compensation">Size Compensation (mm)</Label>
+          <Input
+            id="macos-size-compensation"
+            type="number"
+            step={0.1}
+            value={macosSizeCompensationMm}
+            onChange={(e) => {
+              const value = Number.parseFloat(e.target.value);
+              setMacosSizeCompensationMm(Number.isFinite(value) ? value : 0);
+            }}
+          />
           <p className="text-xs text-muted-foreground">
-            Uses a saved macOS calibration factor for this preset to keep the printed size consistent.
-            {retainSize && scaleCompensation < 1.0 && (
-              <> Scale factor: {(scaleCompensation * 100).toFixed(1)}%</>
-            )}
+            Negative values shrink the printed content. Positive values enlarge it.
+            Use this only when the measured print size needs correction.
           </p>
         </div>
       )}
@@ -388,30 +393,6 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
         />
       </div>
-
-      {isMacos && retainSize && (
-        <div className="grid gap-1.5">
-          <Label htmlFor="macos-native-scale">Native Size Scale</Label>
-          <Input
-            id="macos-native-scale"
-            type="number"
-            min={0.8}
-            max={1.0}
-            step={0.0001}
-            value={scaleCompensation.toFixed(4)}
-            onChange={(e) => {
-              const value = Number.parseFloat(e.target.value);
-              if (Number.isFinite(value)) {
-                setScaleCompensation(Math.min(1.0, Math.max(0.8, value)));
-              }
-            }}
-          />
-          <p className="text-xs text-muted-foreground">
-            Saved per-preset macOS size calibration applied to the wrapped PDF content before printing.
-            Start around {DEFAULT_MACOS_NATIVE_SCALE.toFixed(4)} and tune once for each printer and paper workflow if needed.
-          </p>
-        </div>
-      )}
 
       <div className="flex items-center gap-3">
         <Switch

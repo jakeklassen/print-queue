@@ -295,7 +295,7 @@ fn wrap_image_in_pdf(image_path: &Path, preset: &Preset) -> Result<PathBuf, Stri
         _ => (width_pt, height_pt),
     };
 
-    let image_scale = preset.scale_compensation.max(0.01) as f32;
+    let image_scale = effective_image_scale(preset, width_pt, height_pt);
     let img_width = width_pt * image_scale;
     let img_height = height_pt * image_scale;
     let offset_x = (width_pt - img_width) / 2.0;
@@ -396,4 +396,15 @@ fn wrap_image_in_pdf(image_path: &Path, preset: &Preset) -> Result<PathBuf, Stri
     doc.save(&pdf_path)
         .map_err(|e| format!("Failed to save native PDF: {}", e))?;
     Ok(pdf_path)
+}
+
+#[cfg(target_os = "macos")]
+fn effective_image_scale(preset: &Preset, width_pt: f32, _height_pt: f32) -> f32 {
+    if let Some(compensation_mm) = preset.macos_size_compensation_mm {
+        let compensation_points = (compensation_mm as f32 / 25.4) * 72.0;
+        let adjusted_width = width_pt + compensation_points;
+        return (adjusted_width / width_pt).max(0.01);
+    }
+
+    preset.scale_compensation.max(0.01) as f32
 }

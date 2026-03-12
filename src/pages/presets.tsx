@@ -72,6 +72,7 @@ export function PresetsPage() {
       macos_printer_name: data.macos_printer_name,
       macos_page_width_points: data.macos_page_width_points,
       macos_page_height_points: data.macos_page_height_points,
+      macos_size_compensation_mm: data.macos_size_compensation_mm,
     };
     await updatePreset(updated);
     setShowCreate(false);
@@ -96,6 +97,7 @@ export function PresetsPage() {
       macos_printer_name: data.macos_printer_name,
       macos_page_width_points: data.macos_page_width_points,
       macos_page_height_points: data.macos_page_height_points,
+      macos_size_compensation_mm: data.macos_size_compensation_mm,
       updated_at: new Date().toISOString(),
     };
     await updatePreset(updated);
@@ -122,6 +124,7 @@ export function PresetsPage() {
       macos_printer_name: preset.macos_printer_name,
       macos_page_width_points: preset.macos_page_width_points,
       macos_page_height_points: preset.macos_page_height_points,
+      macos_size_compensation_mm: preset.macos_size_compensation_mm,
     };
     await updatePreset(duplicated);
     refresh();

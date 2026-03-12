@@ -27,6 +27,7 @@ export interface Preset {
   macos_printer_name: string | null;
   macos_page_width_points: number | null;
   macos_page_height_points: number | null;
+  macos_size_compensation_mm: number | null;
   created_at: string;
   updated_at: string;
 }
