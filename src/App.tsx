@@ -6,6 +6,7 @@ import { DashboardPage } from "@/pages/dashboard";
 import { PresetsPage } from "@/pages/presets";
 import { QueuePage } from "@/pages/queue";
 import { SettingsPage } from "@/pages/settings";
+import { UpdateChecker } from "@/components/update-checker";
 import "./App.css";
 
 const views: Record<View, React.ComponentType> = {
@@ -25,6 +26,7 @@ function App() {
         <div className="flex h-screen overflow-hidden">
           <AppSidebar activeView={activeView} onNavigate={setActiveView} />
           <main className="flex-1 overflow-y-auto p-6">
+            <UpdateChecker />
             <ActivePage />
           </main>
         </div>
