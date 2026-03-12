@@ -20,12 +20,16 @@ struct ConfigureResponse: Codable {
     let printInfoBase64: String
     let pageFormatBase64: String
     let printSettingsBase64: String
+    let pageWidthPoints: Double
+    let pageHeightPoints: Double
 
     enum CodingKeys: String, CodingKey {
         case printerName = "printer_name"
         case printInfoBase64 = "print_info_base64"
         case pageFormatBase64 = "page_format_base64"
         case printSettingsBase64 = "print_settings_base64"
+        case pageWidthPoints = "page_width_points"
+        case pageHeightPoints = "page_height_points"
     }
 }
 
@@ -236,7 +240,9 @@ func configure(arguments: [String], printerHint: String?) throws {
             printerName: printerName,
             printInfoBase64: printInfoBase64,
             pageFormatBase64: pageFormatBase64,
-            printSettingsBase64: printSettingsBase64
+            printSettingsBase64: printSettingsBase64,
+            pageWidthPoints: Double(configuredPrintInfo.paperSize.width),
+            pageHeightPoints: Double(configuredPrintInfo.paperSize.height)
         )
     )
 }

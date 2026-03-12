@@ -56,6 +56,10 @@ pub struct Preset {
     pub macos_print_settings_base64: Option<String>,
     #[serde(default)]
     pub macos_printer_name: Option<String>,
+    #[serde(default)]
+    pub macos_page_width_points: Option<f64>,
+    #[serde(default)]
+    pub macos_page_height_points: Option<f64>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -77,6 +81,8 @@ impl Preset {
             macos_page_format_base64: None,
             macos_print_settings_base64: None,
             macos_printer_name: None,
+            macos_page_width_points: None,
+            macos_page_height_points: None,
             created_at: now,
             updated_at: now,
         }

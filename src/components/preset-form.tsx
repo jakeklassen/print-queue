@@ -29,6 +29,8 @@ export interface PresetFormData {
   macos_page_format_base64: string | null;
   macos_print_settings_base64: string | null;
   macos_printer_name: string | null;
+  macos_page_width_points: number | null;
+  macos_page_height_points: number | null;
 }
 
 interface PresetFormProps {
@@ -64,6 +66,12 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   );
   const [macosPrintSettingsBase64, setMacosPrintSettingsBase64] = useState<string | null>(
     preset?.macos_print_settings_base64 ?? null,
+  );
+  const [macosPageWidthPoints, setMacosPageWidthPoints] = useState<number | null>(
+    preset?.macos_page_width_points ?? null,
+  );
+  const [macosPageHeightPoints, setMacosPageHeightPoints] = useState<number | null>(
+    preset?.macos_page_height_points ?? null,
   );
   const [scaleCompensation, setScaleCompensation] = useState(
     preset?.scale_compensation ?? 1.0,
@@ -140,6 +148,8 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       setMacosPrintInfoBase64(config.print_info_base64);
       setMacosPageFormatBase64(config.page_format_base64);
       setMacosPrintSettingsBase64(config.print_settings_base64);
+      setMacosPageWidthPoints(config.page_width_points);
+      setMacosPageHeightPoints(config.page_height_points);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.includes("cancelled")) {
@@ -186,6 +196,8 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       macos_page_format_base64: macosPageFormatBase64,
       macos_print_settings_base64: macosPrintSettingsBase64,
       macos_printer_name: macosPrinterName,
+      macos_page_width_points: macosPageWidthPoints,
+      macos_page_height_points: macosPageHeightPoints,
     });
   };
 
@@ -288,6 +300,9 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           </div>
           <p className="text-xs text-muted-foreground">
             Opens the native macOS print dialog using a real sample page when available and stores the resulting print configuration for headless reuse.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            For exact template positioning, prefer custom page sizes in macOS Page Setup instead of vendor borderless paper presets.
           </p>
           {macosConfigError && (
             <p className="text-xs text-destructive">

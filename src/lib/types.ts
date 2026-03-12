@@ -25,6 +25,8 @@ export interface Preset {
   macos_page_format_base64: string | null;
   macos_print_settings_base64: string | null;
   macos_printer_name: string | null;
+  macos_page_width_points: number | null;
+  macos_page_height_points: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +36,8 @@ export interface MacOSPrintConfiguration {
   print_info_base64: string;
   page_format_base64: string;
   print_settings_base64: string;
+  page_width_points: number;
+  page_height_points: number;
 }
 
 export interface PrinterInfo {

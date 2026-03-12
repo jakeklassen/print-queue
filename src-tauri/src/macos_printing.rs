@@ -26,6 +26,8 @@ pub struct MacOSPrintConfiguration {
     pub print_info_base64: String,
     pub page_format_base64: String,
     pub print_settings_base64: String,
+    pub page_width_points: f64,
+    pub page_height_points: f64,
 }
 
 #[cfg(target_os = "macos")]
@@ -270,12 +272,19 @@ fn paper_size_points(keyword_or_page_size: &str) -> Option<(f32, f32)> {
 fn wrap_image_in_pdf(image_path: &Path, preset: &Preset) -> Result<PathBuf, String> {
     use lopdf::{Document, Object, Stream};
 
-    let page_size_key = preset
-        .settings
-        .get("PageSize")
-        .map(|s| s.as_str())
-        .unwrap_or_else(|| preset.paper_size_keyword.as_str());
-    let (width_pt, height_pt) = paper_size_points(page_size_key).unwrap_or((288.0, 432.0));
+    let (width_pt, height_pt) = if let (Some(width), Some(height)) = (
+        preset.macos_page_width_points,
+        preset.macos_page_height_points,
+    ) {
+        (width as f32, height as f32)
+    } else {
+        let page_size_key = preset
+            .settings
+            .get("PageSize")
+            .map(|s| s.as_str())
+            .unwrap_or_else(|| preset.paper_size_keyword.as_str());
+        paper_size_points(page_size_key).unwrap_or((288.0, 432.0))
+    };
 
     let orientation = preset
         .settings
