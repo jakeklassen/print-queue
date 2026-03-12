@@ -14,6 +14,8 @@
     "fmt:check": "pnpm oxfmt --check",
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:css:fix": "stylelint \"src/**/*.css\" --fix",
+    "check": "pnpm lint && pnpm lint:css && pnpm fmt:check && pnpm build",
+    "fix": "pnpm lint:fix && pnpm lint:css:fix && pnpm fmt",
     "bump": "node scripts/bump.mjs"
   },
   "dependencies": {
