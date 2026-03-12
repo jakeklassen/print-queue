@@ -41,7 +41,10 @@ export function AppSidebar({
       "dark",
       "system",
     ];
-    const next = order[(order.indexOf(theme as "light" | "dark" | "system") + 1) % order.length];
+    const next =
+      order[
+        (order.indexOf(theme as "light" | "dark" | "system") + 1) % order.length
+      ];
     setTheme(next);
   };
 
@@ -60,10 +63,7 @@ export function AppSidebar({
               <Button
                 variant={activeView === id ? "secondary" : "ghost"}
                 size="icon"
-                className={cn(
-                  "h-9 w-9",
-                  activeView === id && "bg-secondary",
-                )}
+                className={cn("h-9 w-9", activeView === id && "bg-secondary")}
                 onClick={() => onNavigate(id)}
               >
                 <Icon className="h-4 w-4" />
@@ -86,9 +86,7 @@ export function AppSidebar({
             <span className="sr-only">Toggle theme ({theme})</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">
-          Theme: {theme}
-        </TooltipContent>
+        <TooltipContent side="right">Theme: {theme}</TooltipContent>
       </Tooltip>
     </aside>
   );

@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Copy,
-  Star,
-  MoreVertical,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, Star, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -80,7 +73,10 @@ export function PresetsPage() {
   };
 
   const handleUpdate = async (data: PresetFormData) => {
-    if (!editingPreset) return;
+    if (!editingPreset) {
+      return;
+    }
+
     const updated: Preset = {
       ...editingPreset,
       name: data.name,
@@ -136,7 +132,10 @@ export function PresetsPage() {
   };
 
   const handleSetDefault = async (id: string) => {
-    if (!config) return;
+    if (!config) {
+      return;
+    }
+
     const newConfig: AppConfig = {
       ...config,
       default_preset_id: config.default_preset_id === id ? null : id,
@@ -180,9 +179,10 @@ export function PresetsPage() {
                         )}
                       </CardTitle>
                       <CardDescription className="text-xs mt-0.5">
-                        {preset.printer_id ?? "No printer"} &middot;{" "}
-                        Keyword: <code>{preset.paper_size_keyword}</code> &middot;{" "}
-                        {preset.copies} {preset.copies === 1 ? "copy" : "copies"} &middot;{" "}
+                        {preset.printer_id ?? "No printer"} &middot; Keyword:{" "}
+                        <code>{preset.paper_size_keyword}</code> &middot;{" "}
+                        {preset.copies}{" "}
+                        {preset.copies === 1 ? "copy" : "copies"} &middot;{" "}
                         {preset.auto_print ? "Auto-print" : "Confirm first"}
                       </CardDescription>
                     </div>
@@ -194,7 +194,9 @@ export function PresetsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingPreset(preset)}>
+                      <DropdownMenuItem
+                        onClick={() => setEditingPreset(preset)}
+                      >
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
@@ -202,7 +204,9 @@ export function PresetsPage() {
                         <Copy className="mr-2 h-4 w-4" />
                         Duplicate
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSetDefault(preset.id)}>
+                      <DropdownMenuItem
+                        onClick={() => handleSetDefault(preset.id)}
+                      >
                         <Star className="mr-2 h-4 w-4" />
                         {isDefault ? "Unset Default" : "Set as Default"}
                       </DropdownMenuItem>

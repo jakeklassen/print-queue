@@ -51,7 +51,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       value.scale_compensation < 0.999
     ) {
       const pageWidthMm = (value.macos_page_width_points / 72) * 25.4;
-      return (pageWidthMm * value.scale_compensation) - pageWidthMm;
+      return pageWidthMm * value.scale_compensation - pageWidthMm;
     }
 
     return 0;
@@ -72,30 +72,27 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   const [devmodeBase64, setDevmodeBase64] = useState<string | null>(
     preset?.devmode_base64 ?? null,
   );
-  const [macosPrintInfoBase64, setMacosPrintInfoBase64] = useState<string | null>(
-    preset?.macos_print_info_base64 ?? null,
-  );
+  const [macosPrintInfoBase64, setMacosPrintInfoBase64] = useState<
+    string | null
+  >(preset?.macos_print_info_base64 ?? null);
   const [macosPrinterName, setMacosPrinterName] = useState<string | null>(
     preset?.macos_printer_name ?? null,
   );
-  const [macosPageFormatBase64, setMacosPageFormatBase64] = useState<string | null>(
-    preset?.macos_page_format_base64 ?? null,
-  );
-  const [macosPrintSettingsBase64, setMacosPrintSettingsBase64] = useState<string | null>(
-    preset?.macos_print_settings_base64 ?? null,
-  );
-  const [macosPageWidthPoints, setMacosPageWidthPoints] = useState<number | null>(
-    preset?.macos_page_width_points ?? null,
-  );
-  const [macosPageHeightPoints, setMacosPageHeightPoints] = useState<number | null>(
-    preset?.macos_page_height_points ?? null,
-  );
-  const [macosSizeCompensationMm, setMacosSizeCompensationMm] = useState<number>(
-    deriveMacosCompensationMm(preset),
-  );
-  const [scaleCompensation] = useState(
-    preset?.scale_compensation ?? 1.0,
-  );
+  const [macosPageFormatBase64, setMacosPageFormatBase64] = useState<
+    string | null
+  >(preset?.macos_page_format_base64 ?? null);
+  const [macosPrintSettingsBase64, setMacosPrintSettingsBase64] = useState<
+    string | null
+  >(preset?.macos_print_settings_base64 ?? null);
+  const [macosPageWidthPoints, setMacosPageWidthPoints] = useState<
+    number | null
+  >(preset?.macos_page_width_points ?? null);
+  const [macosPageHeightPoints, setMacosPageHeightPoints] = useState<
+    number | null
+  >(preset?.macos_page_height_points ?? null);
+  const [macosSizeCompensationMm, setMacosSizeCompensationMm] =
+    useState<number>(deriveMacosCompensationMm(preset));
+  const [scaleCompensation] = useState(preset?.scale_compensation ?? 1.0);
   const [platform, setPlatform] = useState<string | null>(null);
   const [dialogLoading, setDialogLoading] = useState(false);
   const [macosConfigError, setMacosConfigError] = useState<string | null>(null);
@@ -109,19 +106,24 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   const isMacos = platform === "macos";
   const hasMacosNativeConfig = Boolean(
     macosPrintInfoBase64 &&
-      macosPageFormatBase64 &&
-      macosPrintSettingsBase64 &&
-      macosPrinterName,
+    macosPageFormatBase64 &&
+    macosPrintSettingsBase64 &&
+    macosPrinterName,
   );
 
   const handleOpenDialog = async () => {
-    if (!printerId) return;
+    if (!printerId) {
+      return;
+    }
+
     setDialogLoading(true);
+
     try {
       const b64 = await openPrinterDialog(printerId);
       setDevmodeBase64(b64);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+
       if (!msg.includes("cancelled")) {
         console.error("Printer dialog error:", msg);
       }
@@ -133,11 +135,13 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   const handleConfigureMacos = async () => {
     setDialogLoading(true);
     setMacosConfigError(null);
+
     try {
       const config = await configureMacosPrinter(
         printerId,
         paperSizeKeyword || null,
       );
+
       if (
         !config.print_info_base64 ||
         !config.page_format_base64 ||
@@ -152,9 +156,12 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
         ]
           .filter(Boolean)
           .join(", ");
-        setMacosConfigError(`macOS configure returned incomplete data: ${missing}`);
+        setMacosConfigError(
+          `macOS configure returned incomplete data: ${missing}`,
+        );
         return;
       }
+
       console.log("macOS printer configuration captured", {
         printer_name: config.printer_name,
         print_info_length: config.print_info_base64.length,
@@ -170,6 +177,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
       setMacosPageHeightPoints(config.page_height_points);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+
       if (!msg.includes("cancelled")) {
         console.error("macOS printer configuration error:", msg);
         setMacosConfigError(msg);
@@ -181,12 +189,14 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (isMacos && !hasMacosNativeConfig) {
       setMacosConfigError(
         "Run Configure Printer Settings and save the native macOS printer configuration before saving this preset.",
       );
       return;
     }
+
     onSave({
       name,
       printer_id: printerId,
@@ -236,7 +246,9 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
               onClick={handleOpenDialog}
             >
               <Settings2 className="mr-2 h-4 w-4" />
-              {dialogLoading ? "Waiting for dialog..." : "Configure Printer Settings"}
+              {dialogLoading
+                ? "Waiting for dialog..."
+                : "Configure Printer Settings"}
             </Button>
             {devmodeBase64 ? (
               <div className="flex items-center gap-1.5">
@@ -255,11 +267,14 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
                 </Button>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">Not configured</span>
+              <span className="text-xs text-muted-foreground">
+                Not configured
+              </span>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Opens the native printer driver dialog to capture all settings including vendor-specific options.
+            Opens the native printer driver dialog to capture all settings
+            including vendor-specific options.
           </p>
         </div>
       )}
@@ -276,7 +291,9 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
               onClick={handleConfigureMacos}
             >
               <Settings2 className="mr-2 h-4 w-4" />
-              {dialogLoading ? "Opening print dialog..." : "Configure Printer Settings"}
+              {dialogLoading
+                ? "Opening print dialog..."
+                : "Configure Printer Settings"}
             </Button>
             {hasMacosNativeConfig ? (
               <div className="flex items-center gap-1.5">
@@ -300,19 +317,22 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
                 </Button>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">Not configured</span>
+              <span className="text-xs text-muted-foreground">
+                Not configured
+              </span>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Opens the native macOS print dialog using a real sample page when available and stores the resulting print configuration for headless reuse.
+            Opens the native macOS print dialog using a real sample page when
+            available and stores the resulting print configuration for headless
+            reuse.
           </p>
           <p className="text-xs text-muted-foreground">
-            For exact template positioning, prefer custom page sizes in macOS Page Setup instead of vendor borderless paper presets.
+            For exact template positioning, prefer custom page sizes in macOS
+            Page Setup instead of vendor borderless paper presets.
           </p>
           {macosConfigError && (
-            <p className="text-xs text-destructive">
-              {macosConfigError}
-            </p>
+            <p className="text-xs text-destructive">{macosConfigError}</p>
           )}
           {macosPrinterName && (
             <p className="text-xs text-muted-foreground">
@@ -321,13 +341,10 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           )}
           {hasMacosNativeConfig && (
             <p className="text-xs text-muted-foreground">
-              Native config captured:
-              {" "}
-              printInfo {macosPrintInfoBase64?.length ?? 0} chars,
-              {" "}
-              pageFormat {macosPageFormatBase64?.length ?? 0} chars,
-              {" "}
-              printSettings {macosPrintSettingsBase64?.length ?? 0} chars.
+              Native config captured: printInfo{" "}
+              {macosPrintInfoBase64?.length ?? 0} chars, pageFormat{" "}
+              {macosPageFormatBase64?.length ?? 0} chars, printSettings{" "}
+              {macosPrintSettingsBase64?.length ?? 0} chars.
             </p>
           )}
         </div>
@@ -335,7 +352,9 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
 
       {isMacos && macosPrintInfoBase64 && (
         <div className="grid gap-1.5">
-          <Label htmlFor="macos-size-compensation">Size Compensation (mm)</Label>
+          <Label htmlFor="macos-size-compensation">
+            Size Compensation (mm)
+          </Label>
           <Input
             id="macos-size-compensation"
             type="number"
@@ -348,8 +367,8 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
             }}
           />
           <p className="text-xs text-muted-foreground">
-            Negative values shrink the printed content. Positive values enlarge it.
-            Use this only when the measured print size needs correction.
+            Negative values shrink the printed content. Positive values enlarge
+            it. Use this only when the measured print size needs correction.
           </p>
         </div>
       )}
@@ -361,6 +380,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           value={paperSizeKeyword}
           onChange={(e) => {
             setPaperSizeKeyword(e.target.value);
+
             if (isMacos) {
               setMacosConfigError(null);
             }
