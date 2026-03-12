@@ -259,7 +259,15 @@ export function SettingsPage() {
           <CardTitle className="text-base">About</CardTitle>
           <CardDescription>
             PrintQueue v{appVersion}
-            {platform ? ` (${platform})` : ""}
+            {platform ? ` (${platform})` : ""} — Made by Jake Klassen of{" "}
+            <a
+              href="https://hellomagnets.studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              Hello Magnets
+            </a>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
