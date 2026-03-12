@@ -1,36 +1,38 @@
-import { useEffect, useState } from "react";
-import { check } from "@tauri-apps/plugin-updater";
+import { useEffect, useRef, useState } from "react";
+import { check, type Update } from "@tauri-apps/plugin-updater";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 
 export function UpdateChecker() {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [version, setVersion] = useState("");
-  const [installing, setInstalling] = useState(false);
+  const [state, setState] = useState<
+    "idle" | "available" | "downloading" | "ready" | "error"
+  >("idle");
   const [progress, setProgress] = useState("");
+  const updateRef = useRef<Update | null>(null);
 
   useEffect(() => {
-    checkForUpdate();
+    check()
+      .then((update) => {
+        if (update) {
+          updateRef.current = update;
+          setVersion(update.version);
+          setState("available");
+        }
+      })
+      .catch((e) => console.error("Update check failed:", e));
   }, []);
 
-  const checkForUpdate = async () => {
-    try {
-      const update = await check();
-      if (update) {
-        setUpdateAvailable(true);
-        setVersion(update.version);
-      }
-    } catch (e) {
-      console.error("Update check failed:", e);
-    }
-  };
-
   const installUpdate = async () => {
-    setInstalling(true);
-    try {
-      const update = await check();
-      if (!update) return;
+    const update = updateRef.current;
+    if (!update) {
+      setState("error");
+      setProgress("Update no longer available");
+      return;
+    }
 
+    setState("downloading");
+    try {
       let totalLength = 0;
       let downloaded = 0;
 
@@ -48,28 +50,54 @@ export function UpdateChecker() {
             }
             break;
           case "Finished":
-            setProgress("Restart to finish update");
+            setProgress("Update installed — restart the app to apply");
             break;
         }
       });
+      setState("ready");
     } catch (e) {
       console.error("Update install failed:", e);
-      setInstalling(false);
-      setProgress("");
+      setState("error");
+      setProgress(e instanceof Error ? e.message : "Update failed");
     }
   };
 
-  if (!updateAvailable) return null;
+  if (state === "idle") return null;
 
   return (
     <div className="mb-4 flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
-      <Download className="h-4 w-4 shrink-0" />
+      {state === "ready" ? (
+        <RefreshCw className="h-4 w-4 shrink-0" />
+      ) : (
+        <Download className="h-4 w-4 shrink-0" />
+      )}
       <span className="truncate">
-        {installing ? progress : `v${version} available`}
+        {state === "available" && `v${version} available`}
+        {state === "downloading" && progress}
+        {state === "ready" && progress}
+        {state === "error" && progress}
       </span>
-      {!installing && (
-        <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={installUpdate}>
+      {state === "available" && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto h-7 text-xs"
+          onClick={installUpdate}
+        >
           Update
+        </Button>
+      )}
+      {state === "error" && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto h-7 text-xs"
+          onClick={() => {
+            setState("available");
+            setProgress("");
+          }}
+        >
+          Retry
         </Button>
       )}
     </div>
