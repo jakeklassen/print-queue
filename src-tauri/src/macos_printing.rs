@@ -17,7 +17,7 @@ use crate::printing::PrinterInfo;
 use lopdf::dictionary;
 
 #[cfg(target_os = "macos")]
-const HELPER_SOURCE: &str = "macos-helper/PrintQueueMacHelper.swift";
+const HELPER_BINARY_NAME: &str = "macos-helper/printqueue-macos-helper";
 
 #[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,45 +44,51 @@ struct HelperPrinterInfo {
 }
 
 #[cfg(target_os = "macos")]
-fn helper_binary_path(app: &AppHandle) -> Result<PathBuf, String> {
+fn resolve_helper(app: &AppHandle) -> Result<PathBuf, String> {
+    // In production, the helper is bundled as a resource
+    let resource_path = app
+        .path()
+        .resource_dir()
+        .map_err(|e| format!("Failed to resolve resource dir: {}", e))?
+        .join(HELPER_BINARY_NAME);
+
+    if resource_path.exists() {
+        // Ensure the binary is executable
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&resource_path)
+                .map_err(|e| format!("Failed to read helper permissions: {}", e))?
+                .permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&resource_path, perms)
+                .map_err(|e| format!("Failed to set helper permissions: {}", e))?;
+        }
+
+        return Ok(resource_path);
+    }
+
+    // Dev fallback: compile from source
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("macos-helper/PrintQueueMacHelper.swift");
     let data_dir = app
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
     let helper_dir = data_dir.join("macos-helper");
-    fs::create_dir_all(&helper_dir).map_err(|e| format!("Failed to create helper dir: {}", e))?;
-    Ok(helper_dir.join("printqueue-macos-helper"))
-}
-
-#[cfg(target_os = "macos")]
-fn helper_source_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join(HELPER_SOURCE)
-}
-
-#[cfg(target_os = "macos")]
-fn ensure_helper_built(app: &AppHandle) -> Result<PathBuf, String> {
-    let source = helper_source_path();
-    let binary = helper_binary_path(app)?;
+    fs::create_dir_all(&helper_dir)
+        .map_err(|e| format!("Failed to create helper dir: {}", e))?;
+    let binary = helper_dir.join("printqueue-macos-helper");
 
     let should_build = match (fs::metadata(&source), fs::metadata(&binary)) {
         (Ok(source_meta), Ok(binary_meta)) => {
             source_meta.modified().ok() > binary_meta.modified().ok()
         }
         (Ok(_), Err(_)) => true,
-        (Err(e), _) => return Err(format!("Missing macOS helper source: {}", e)),
+        (Err(e), _) => return Err(format!("Missing macOS helper: {}", e)),
     };
 
     if should_build {
-        let swift_module_cache = std::env::temp_dir().join("printqueue-swift-module-cache");
-        let clang_module_cache = std::env::temp_dir().join("printqueue-clang-module-cache");
-        fs::create_dir_all(&swift_module_cache)
-            .map_err(|e| format!("Failed to create Swift module cache: {}", e))?;
-        fs::create_dir_all(&clang_module_cache)
-            .map_err(|e| format!("Failed to create Clang module cache: {}", e))?;
-
         let output = Command::new("xcrun")
-            .env("SWIFT_MODULECACHE_PATH", &swift_module_cache)
-            .env("CLANG_MODULE_CACHE_PATH", &clang_module_cache)
             .args([
                 "swiftc",
                 "-O",
@@ -110,7 +116,7 @@ fn ensure_helper_built(app: &AppHandle) -> Result<PathBuf, String> {
 
 #[cfg(target_os = "macos")]
 fn run_helper(app: &AppHandle, args: &[String]) -> Result<String, String> {
-    let helper = ensure_helper_built(app)?;
+    let helper = resolve_helper(app)?;
     let output = Command::new(helper)
         .args(args)
         .output()
