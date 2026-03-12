@@ -340,6 +340,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
             id="macos-size-compensation"
             type="number"
             step={0.1}
+            className="no-spinners"
             value={macosSizeCompensationMm}
             onChange={(e) => {
               const value = Number.parseFloat(e.target.value);
@@ -390,6 +391,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
           type="number"
           min={1}
           max={100}
+          className="no-spinners"
           value={copies}
           onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
         />

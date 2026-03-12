@@ -122,13 +122,13 @@
     @apply bg-background text-foreground;
     }
 
-  /* Hide native number input spinners */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
+  /* Hide native number input spinners — apply .no-spinners to opt in */
+  .no-spinners::-webkit-inner-spin-button,
+  .no-spinners::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-  input[type="number"] {
+  .no-spinners {
     -moz-appearance: textfield;
   }
 }
