@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { FolderOpen, Save } from "lucide-react";
+import { check, type Update } from "@tauri-apps/plugin-updater";
+import { FolderOpen, Save, RefreshCw, Download, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,12 +20,77 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { getConfig, saveConfig, startWatcher } from "@/lib/api";
+import { getConfig, saveConfig, startWatcher, getPlatform } from "@/lib/api";
+import { getVersion } from "@tauri-apps/api/app";
 import type { AppConfig, PostFileAction } from "@/lib/types";
+
+type UpdateState = "idle" | "checking" | "available" | "downloading" | "ready" | "up-to-date" | "error";
 
 export function SettingsPage() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [appVersion, setAppVersion] = useState("");
+  const [updateState, setUpdateState] = useState<UpdateState>("idle");
+  const [updateVersion, setUpdateVersion] = useState("");
+  const [updateProgress, setUpdateProgress] = useState("");
+  const [updateRef, setUpdateRef] = useState<Update | null>(null);
+  const [platform, setPlatform] = useState("");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion);
+    getPlatform().then(setPlatform);
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    setUpdateState("checking");
+    setUpdateProgress("");
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateRef(update);
+        setUpdateVersion(update.version);
+        setUpdateState("available");
+      } else {
+        setUpdateState("up-to-date");
+      }
+    } catch (e) {
+      // No releases yet or network error — treat as up-to-date
+      console.debug("Update check:", e);
+      setUpdateState("up-to-date");
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!updateRef) return;
+    setUpdateState("downloading");
+    try {
+      let totalLength = 0;
+      let downloaded = 0;
+      await updateRef.downloadAndInstall((event) => {
+        switch (event.event) {
+          case "Started":
+            totalLength = event.data.contentLength ?? 0;
+            setUpdateProgress("Downloading...");
+            break;
+          case "Progress":
+            downloaded += event.data.chunkLength;
+            if (totalLength > 0) {
+              const pct = Math.round((downloaded / totalLength) * 100);
+              setUpdateProgress(`Downloading... ${pct}%`);
+            }
+            break;
+          case "Finished":
+            setUpdateProgress("Restart the app to apply the update");
+            break;
+        }
+      });
+      setUpdateState("ready");
+    } catch (e) {
+      console.error("Update install failed:", e);
+      setUpdateState("error");
+      setUpdateProgress(e instanceof Error ? e.message : "Install failed");
+    }
+  };
 
   useEffect(() => {
     getConfig().then(setConfig);
@@ -161,6 +227,67 @@ export function SettingsPage() {
                 <SelectItem value="keep">Keep in place</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">About</CardTitle>
+          <CardDescription>
+            PrintQueue v{appVersion}{platform ? ` (${platform})` : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            {updateState === "idle" && (
+              <Button variant="outline" onClick={handleCheckUpdate}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Check for Updates
+              </Button>
+            )}
+            {updateState === "checking" && (
+              <Button variant="outline" disabled>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Checking...
+              </Button>
+            )}
+            {updateState === "up-to-date" && (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-sm text-green-600">
+                  <Check className="h-4 w-4" />
+                  You're on the latest version
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setUpdateState("idle")}>
+                  Check again
+                </Button>
+              </div>
+            )}
+            {updateState === "available" && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm">v{updateVersion} available</span>
+                <Button variant="outline" onClick={handleInstallUpdate}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Install Update
+                </Button>
+              </div>
+            )}
+            {updateState === "downloading" && (
+              <span className="text-sm">{updateProgress}</span>
+            )}
+            {updateState === "ready" && (
+              <span className="flex items-center gap-1 text-sm text-green-600">
+                <Check className="h-4 w-4" />
+                {updateProgress}
+              </span>
+            )}
+            {updateState === "error" && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-destructive">{updateProgress}</span>
+                <Button variant="ghost" size="sm" onClick={() => setUpdateState("idle")}>
+                  Retry
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
