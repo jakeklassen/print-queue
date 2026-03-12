@@ -96,7 +96,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
   const [scaleCompensation] = useState(
     preset?.scale_compensation ?? 1.0,
   );
-  const [platform, setPlatform] = useState<string>("unknown");
+  const [platform, setPlatform] = useState<string | null>(null);
   const [dialogLoading, setDialogLoading] = useState(false);
   const [macosConfigError, setMacosConfigError] = useState<string | null>(null);
 
@@ -104,6 +104,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
     getPlatform().then(setPlatform);
   }, []);
 
+  const platformLoaded = platform !== null;
   const isWindows = platform === "windows";
   const isMacos = platform === "macos";
   const hasMacosNativeConfig = Boolean(
@@ -371,7 +372,7 @@ export function PresetForm({ preset, onSave, onCancel }: PresetFormProps) {
         </p>
       </div>
 
-      {!isWindows && !isMacos && (
+      {platformLoaded && !isWindows && !isMacos && (
         <div className="space-y-3">
           <Label className="text-sm font-medium">Print Settings</Label>
           <CapabilitiesForm
