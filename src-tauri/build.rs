@@ -61,6 +61,19 @@ fn main() {
                 )
             });
 
+            // Ensure the staged binary is executable before Tauri bundles it.
+            // This preserves the bit through packaging so the installed app
+            // never needs to chmod the bundled resource at runtime.
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut perms = std::fs::metadata(&staging_binary)
+                    .expect("Failed to read staged helper metadata")
+                    .permissions();
+                perms.set_mode(0o755);
+                std::fs::set_permissions(&staging_binary, perms)
+                    .expect("Failed to set staged helper permissions");
+            }
+
             println!("cargo:rerun-if-changed=macos-helper/PrintQueueMacHelper.swift");
         }
     }
