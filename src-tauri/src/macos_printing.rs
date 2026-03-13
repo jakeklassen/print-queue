@@ -53,18 +53,6 @@ fn resolve_helper(app: &AppHandle) -> Result<PathBuf, String> {
         .join(HELPER_BINARY_NAME);
 
     if resource_path.exists() {
-        // Ensure the binary is executable
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(&resource_path)
-                .map_err(|e| format!("Failed to read helper permissions: {}", e))?
-                .permissions();
-            perms.set_mode(0o755);
-            fs::set_permissions(&resource_path, perms)
-                .map_err(|e| format!("Failed to set helper permissions: {}", e))?;
-        }
-
         return Ok(resource_path);
     }
 
