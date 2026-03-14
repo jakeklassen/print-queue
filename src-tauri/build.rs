@@ -8,8 +8,8 @@ fn main() {
 
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let out_dir = std::env::var("OUT_DIR").unwrap();
-        let source = std::path::Path::new(&manifest_dir)
-            .join("macos-helper/PrintQueueMacHelper.swift");
+        let source =
+            std::path::Path::new(&manifest_dir).join("macos-helper/PrintQueueMacHelper.swift");
 
         if source.exists() {
             // Determine the swiftc -target triple from the Rust target architecture.
@@ -51,27 +51,37 @@ fn main() {
 
             // Copy to the source-tree staging path for Tauri resource bundling.
             // This path is referenced by tauri.macos.conf.json and is gitignored.
-            let staging_dir =
-                std::path::Path::new(&manifest_dir).join("macos-helper");
+            // Only copy when content differs to avoid triggering Tauri's file
+            // watcher, which would cause an infinite rebuild loop during `tauri dev`.
+            let staging_dir = std::path::Path::new(&manifest_dir).join("macos-helper");
             let staging_binary = staging_dir.join("printqueue-macos-helper");
-            std::fs::copy(&build_binary, &staging_binary).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to copy helper to staging path: {}",
-                    e
-                )
-            });
 
-            // Ensure the staged binary is executable before Tauri bundles it.
-            // This preserves the bit through packaging so the installed app
-            // never needs to chmod the bundled resource at runtime.
-            {
-                use std::os::unix::fs::PermissionsExt;
-                let mut perms = std::fs::metadata(&staging_binary)
-                    .expect("Failed to read staged helper metadata")
-                    .permissions();
-                perms.set_mode(0o755);
-                std::fs::set_permissions(&staging_binary, perms)
-                    .expect("Failed to set staged helper permissions");
+            let needs_copy = if staging_binary.exists() {
+                let build_bytes =
+                    std::fs::read(&build_binary).expect("Failed to read build binary");
+                let staging_bytes =
+                    std::fs::read(&staging_binary).expect("Failed to read staging binary");
+                build_bytes != staging_bytes
+            } else {
+                true
+            };
+
+            if needs_copy {
+                std::fs::copy(&build_binary, &staging_binary)
+                    .unwrap_or_else(|e| panic!("Failed to copy helper to staging path: {}", e));
+
+                // Ensure the staged binary is executable before Tauri bundles it.
+                // This preserves the bit through packaging so the installed app
+                // never needs to chmod the bundled resource at runtime.
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = std::fs::metadata(&staging_binary)
+                        .expect("Failed to read staged helper metadata")
+                        .permissions();
+                    perms.set_mode(0o755);
+                    std::fs::set_permissions(&staging_binary, perms)
+                        .expect("Failed to set staged helper permissions");
+                }
             }
 
             println!("cargo:rerun-if-changed=macos-helper/PrintQueueMacHelper.swift");
