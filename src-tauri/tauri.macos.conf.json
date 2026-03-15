@@ -1,7 +1,7 @@
 {
   "bundle": {
     "resources": {
-      "macos-helper/printqueue-macos-helper": "macos-helper/"
+      "macos-helper/printqueue-macos-helper": "macos-helper/printqueue-macos-helper"
     }
   }
 }

@@ -18,6 +18,8 @@ use lopdf::dictionary;
 
 #[cfg(target_os = "macos")]
 const HELPER_BINARY_NAME: &str = "macos-helper/printqueue-macos-helper";
+#[cfg(target_os = "macos")]
+const HELPER_RESOURCE_FALLBACK_NAME: &str = "macos-helper";
 
 #[cfg(target_os = "macos")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,15 +47,20 @@ struct HelperPrinterInfo {
 
 #[cfg(target_os = "macos")]
 fn resolve_helper(app: &AppHandle) -> Result<PathBuf, String> {
-    // In production, the helper is bundled as a resource
-    let resource_path = app
+    // Tauri resource bundling has produced two layouts here across builds:
+    // the intended nested path and a flat file at Resources/macos-helper.
+    let resource_dir = app
         .path()
         .resource_dir()
-        .map_err(|e| format!("Failed to resolve resource dir: {}", e))?
-        .join(HELPER_BINARY_NAME);
+        .map_err(|e| format!("Failed to resolve resource dir: {}", e))?;
 
-    if resource_path.exists() {
-        return Ok(resource_path);
+    for candidate in [
+        resource_dir.join(HELPER_BINARY_NAME),
+        resource_dir.join(HELPER_RESOURCE_FALLBACK_NAME),
+    ] {
+        if candidate.is_file() {
+            return Ok(candidate);
+        }
     }
 
     // Dev fallback: compile from source
