@@ -84,7 +84,12 @@ fn main() {
                 }
             }
 
-            println!("cargo:rerun-if-changed=macos-helper/PrintQueueMacHelper.swift");
+            // NOTE: we intentionally omit cargo:rerun-if-changed here.
+            // Without it, Cargo re-runs build.rs on every build, which ensures
+            // the staging binary is always present (important for cached CI builds
+            // where target/ is restored but the gitignored staging path is not).
+            // The content-comparison above prevents unnecessary writes that would
+            // trigger Tauri's file watcher loop during `tauri dev`.
         }
     }
 
