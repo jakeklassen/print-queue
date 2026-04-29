@@ -4,7 +4,7 @@
   "singleQuote": false,
   "trailingComma": "all",
   "printWidth": 80,
-  "ignorePatterns": [".claude/"],
+  "ignorePatterns": [".claude/", "**/Cargo.lock"],
   "tabWidth": 2,
   "useTabs": false
 }
