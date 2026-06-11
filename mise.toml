@@ -1,4 +1,11 @@
 [tools]
-node = "24.15.0"
+node = "24.16.0"
 rust = "1.93.1"
-pnpm = "10.33.2"
+pnpm = "11.5.3"
+
+[env]
+# Tauri updater signing key (path read by `tauri build` to sign updater artifacts).
+# The key file itself is gitignored under .keys/; only this path is committed.
+TAURI_SIGNING_PRIVATE_KEY = "{{config_root}}/.keys/print-queue.key"
+# Key was generated with an empty password; set it explicitly to skip the prompt.
+TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
