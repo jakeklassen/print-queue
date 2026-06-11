@@ -59,12 +59,18 @@ let cargo = readFileSync(cargoPath, "utf-8");
 cargo = cargo.replace(/^version\s*=\s*"[^"]*"/m, `version = "${next}"`);
 writeFileSync(cargoPath, cargo);
 
+// Update Cargo.lock (the print-queue package's own version entry)
+const lockPath = resolve(root, "src-tauri", "Cargo.lock");
+let lock = readFileSync(lockPath, "utf-8");
+lock = lock.replace(/(name = "print-queue"\nversion = )"[^"]*"/, `$1"${next}"`);
+writeFileSync(lockPath, lock);
+
 console.log(`${current} → ${next}`);
-console.log("Updated: package.json, Cargo.toml");
+console.log("Updated: package.json, Cargo.toml, Cargo.lock");
 console.log("tauri.conf.json reads from package.json automatically.");
 
 // Stage, commit, tag
-execSync(`git add "${pkgPath}" "${cargoPath}"`, {
+execSync(`git add "${pkgPath}" "${cargoPath}" "${lockPath}"`, {
   cwd: root,
   stdio: "inherit",
 });
