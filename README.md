@@ -18,6 +18,19 @@ Install the required toolchain via [mise](https://mise.jdx.dev/) (`mise install`
 - Rust 1.93.1
 - pnpm 11.5.3
 
+### Building on Linux / WSL
+
+Linux is not a shipping target (releases are Windows and macOS), but the build
+links against CUPS via the `printers` crate, so a Linux/WSL build needs the CUPS
+dev libraries. Install them once with:
+
+```bash
+mise run setup-linux   # runs: sudo apt-get install -y libcups2-dev
+```
+
+Without this you'll hit `rust-lld: error: unable to find library -lcups` during
+`pnpm tauri build`. (Debian/Ubuntu only; adjust the package for other distros.)
+
 ## Getting Started
 
 ```bash

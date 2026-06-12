@@ -3,6 +3,10 @@ node = "26.3.0"
 rust = "1.93.1"
 pnpm = "11.5.3"
 
+[tasks.setup-linux]
+description = "Install Linux/WSL build prerequisites (CUPS dev libs for the `printers` crate)"
+run = "sudo apt-get update && sudo apt-get install -y libcups2-dev"
+
 [env]
 # Tauri updater signing key (path read by `tauri build` to sign updater artifacts).
 # The key file itself is gitignored under .keys/; only this path is committed.
