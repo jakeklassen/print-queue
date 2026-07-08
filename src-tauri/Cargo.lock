@@ -1788,6 +1788,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hello-print"
+version = "0.1.12"
+dependencies = [
+ "chrono",
+ "flate2",
+ "hex",
+ "image",
+ "lopdf",
+ "notify",
+ "notify-debouncer-full",
+ "printers",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-updater",
+ "uuid",
+ "zip 8.6.0",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3528,31 +3553,6 @@ checksum = "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b"
 dependencies = [
  "proc-macro2",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "print-queue"
-version = "0.1.12"
-dependencies = [
- "chrono",
- "flate2",
- "hex",
- "image",
- "lopdf",
- "notify",
- "notify-debouncer-full",
- "printers",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-updater",
- "uuid",
- "zip 8.6.0",
 ]
 
 [[package]]

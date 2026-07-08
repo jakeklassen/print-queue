@@ -17,7 +17,7 @@ use crate::printing::PrinterInfo;
 use lopdf::dictionary;
 
 #[cfg(target_os = "macos")]
-const HELPER_BINARY_NAME: &str = "macos-helper/printqueue-macos-helper";
+const HELPER_BINARY_NAME: &str = "macos-helper/hello-print-macos-helper";
 #[cfg(target_os = "macos")]
 const HELPER_RESOURCE_FALLBACK_NAME: &str = "macos-helper";
 
@@ -64,7 +64,7 @@ fn resolve_helper(app: &AppHandle) -> Result<PathBuf, String> {
     }
 
     // Dev fallback: compile from source
-    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("macos-helper/PrintQueueMacHelper.swift");
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("macos-helper/HelloPrintMacHelper.swift");
     let data_dir = app
         .path()
         .app_data_dir()
@@ -72,7 +72,7 @@ fn resolve_helper(app: &AppHandle) -> Result<PathBuf, String> {
     let helper_dir = data_dir.join("macos-helper");
     fs::create_dir_all(&helper_dir)
         .map_err(|e| format!("Failed to create helper dir: {}", e))?;
-    let binary = helper_dir.join("printqueue-macos-helper");
+    let binary = helper_dir.join("hello-print-macos-helper");
 
     let should_build = match (fs::metadata(&source), fs::metadata(&binary)) {
         (Ok(source_meta), Ok(binary_meta)) => {
@@ -119,7 +119,7 @@ fn run_helper(app: &AppHandle, args: &[String]) -> Result<String, String> {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     if !stderr.trim().is_empty() {
-        eprintln!("[PrintQueue][macOS] helper stderr: {}", stderr.trim());
+        eprintln!("[HelloPrint][macOS] helper stderr: {}", stderr.trim());
     }
 
     if !output.status.success() {
@@ -387,7 +387,7 @@ fn wrap_image_in_pdf(image_path: &Path, preset: &Preset) -> Result<PathBuf, Stri
     doc.trailer.set("Root", catalog_id);
 
     let pdf_path = std::env::temp_dir().join(format!(
-        "printqueue-native-{}.pdf",
+        "helloprint-native-{}.pdf",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()

@@ -1,8 +1,8 @@
-# PrintQueue — Product Requirements Document
+# Hello Print — Product Requirements Document
 
 ## Overview
 
-PrintQueue is a cross-platform desktop application built with Tauri that automates photo printing workflows for makers and small business owners. Users configure a watch folder, select their printer and settings, and the app automatically detects new zip files, extracts images, and sends them to the printer with the correct preset configuration — eliminating the manual process of unzipping, opening print software, configuring settings, and drag-and-dropping files for every batch.
+Hello Print is a cross-platform desktop application built with Tauri that automates photo printing workflows for makers and small business owners. Users configure a watch folder, select their printer and settings, and the app automatically detects new zip files, extracts images, and sends them to the printer with the correct preset configuration — eliminating the manual process of unzipping, opening print software, configuring settings, and drag-and-dropping files for every batch.
 
 ## Problem Statement
 

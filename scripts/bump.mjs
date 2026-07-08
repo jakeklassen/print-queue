@@ -59,10 +59,10 @@ let cargo = readFileSync(cargoPath, "utf-8");
 cargo = cargo.replace(/^version\s*=\s*"[^"]*"/m, `version = "${next}"`);
 writeFileSync(cargoPath, cargo);
 
-// Update Cargo.lock (the print-queue package's own version entry)
+// Update Cargo.lock (the hello-print package's own version entry)
 const lockPath = resolve(root, "src-tauri", "Cargo.lock");
 let lock = readFileSync(lockPath, "utf-8");
-lock = lock.replace(/(name = "print-queue"\nversion = )"[^"]*"/, `$1"${next}"`);
+lock = lock.replace(/(name = "hello-print"\nversion = )"[^"]*"/, `$1"${next}"`);
 writeFileSync(lockPath, lock);
 
 console.log(`${current} → ${next}`);

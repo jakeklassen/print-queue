@@ -29,4 +29,4 @@ tmp/
 .keys/
 
 # Compiled macOS helper (built during cargo build)
-src-tauri/macos-helper/printqueue-macos-helper
+src-tauri/macos-helper/hello-print-macos-helper

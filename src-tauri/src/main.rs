@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    print_queue_lib::run()
+    hello_print_lib::run()
 }

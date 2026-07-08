@@ -117,7 +117,7 @@ func logPrintSettings(_ label: String, printInfo: NSPrintInfo) {
         .map { String(describing: $0) }
         .sorted()
         .joined(separator: ", ")
-    fputs("[PrintQueue][macOS] \(label) printSettings keys: \(pairs)\n", stderr)
+    fputs("[HelloPrint][macOS] \(label) printSettings keys: \(pairs)\n", stderr)
 }
 
 func applyPMState(
@@ -231,7 +231,7 @@ func configure(arguments: [String], printerHint: String?) throws {
     }
 
     fputs(
-        "[PrintQueue][macOS] captured blob lengths: printInfo=\(printInfoBase64.count), pageFormat=\(pageFormatBase64.count), printSettings=\(printSettingsBase64.count)\n",
+        "[HelloPrint][macOS] captured blob lengths: printInfo=\(printInfoBase64.count), pageFormat=\(pageFormatBase64.count), printSettings=\(printSettingsBase64.count)\n",
         stderr
     )
 

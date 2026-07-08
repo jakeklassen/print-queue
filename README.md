@@ -1,4 +1,4 @@
-# PrintQueue
+# Hello Print
 
 A cross-platform desktop application built with Tauri that automates photo printing workflows for makers and small business owners. Users configure a watch folder, select their printer and settings, and the app automatically detects new zip files, extracts images, and sends them to the printer with the correct preset configuration.
 
@@ -82,9 +82,9 @@ plus the auto-updater manifest.
 
 ### What gets published
 
-- `print-queue_X.Y.Z_x64-setup.exe` — Windows installer (NSIS)
-- `print-queue_X.Y.Z_aarch64.dmg` — macOS Apple Silicon (M-series)
-- `print-queue_X.Y.Z_x64.dmg` — macOS Intel
+- `Hello Print_X.Y.Z_x64-setup.exe` — Windows installer (NSIS)
+- `Hello Print_X.Y.Z_aarch64.dmg` — macOS Apple Silicon (M-series)
+- `Hello Print_X.Y.Z_x64.dmg` — macOS Intel
 - `latest.json` + `.sig` files — consumed by the in-app auto-updater
 
 ### Updater signing
@@ -95,7 +95,7 @@ is baked into `tauri.conf.json`.
 - **CI:** the private key is provided via the `TAURI_SIGNING_PRIVATE_KEY`
   repository secret.
 - **Local signed builds:** `mise.toml` points `TAURI_SIGNING_PRIVATE_KEY` at
-  `.keys/print-queue.key` (gitignored). Run `mise trust` once, then
+  `.keys/hello-print.key` (gitignored). Run `mise trust` once, then
   `pnpm tauri build` produces signed artifacts. Use `pnpm tauri build --no-bundle`
   for an unsigned compile-only check.
 
@@ -103,4 +103,4 @@ is baked into `tauri.conf.json`.
 
 Builds are **not** code-signed/notarized (no Apple Developer account). On first
 launch macOS users must clear the quarantine flag:
-`xattr -cr /Applications/print-queue.app`. Tracked in issue #13.
+`xattr -cr "/Applications/Hello Print.app"`. Tracked in issue #13.

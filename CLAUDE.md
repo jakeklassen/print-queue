@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PrintQueue is a Tauri v2 desktop application that automates photo printing workflows. It watches a folder for .zip/image files, extracts images from zips, parses filenames for size keywords (e.g. `4x6`, `A4`), routes them to matching printer presets, and submits print jobs automatically. See `PRD.md` for full product requirements.
+Hello Print is a Tauri v2 desktop application that automates photo printing workflows. It watches a folder for .zip/image files, extracts images from zips, parses filenames for size keywords (e.g. `4x6`, `A4`), routes them to matching printer presets, and submits print jobs automatically. See `PRD.md` for full product requirements.
 
 ## Tech Stack
 
