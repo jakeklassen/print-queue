@@ -6,7 +6,7 @@ use tauri::{
 };
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-    let open_item = MenuItem::with_id(app, "open", "Open PrintQueue", true, None::<&str>)?;
+    let open_item = MenuItem::with_id(app, "open", "Open Hello Print", true, None::<&str>)?;
     let pause_item = MenuItem::with_id(app, "pause", "Pause Watching", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
@@ -18,7 +18,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let _tray = TrayIconBuilder::new()
         .icon(icon)
-        .tooltip("PrintQueue")
+        .tooltip("Hello Print")
         .menu(&menu)
         .on_menu_event(move |app, event| match event.id.as_ref() {
             "open" => {

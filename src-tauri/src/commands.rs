@@ -119,7 +119,7 @@ public static class PrinterDialog {{
     );
 
     let script_path = std::env::temp_dir().join(format!(
-        "printqueue_dialog_{}.ps1",
+        "helloprint_dialog_{}.ps1",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()

@@ -15,7 +15,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>({
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "printqueue-theme",
+  storageKey = "helloprint-theme",
 }: {
   children: React.ReactNode;
   defaultTheme?: Theme;

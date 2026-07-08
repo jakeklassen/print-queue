@@ -161,7 +161,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">Watch Folder</CardTitle>
           <CardDescription>
-            The folder PrintQueue monitors for new files.
+            The folder Hello Print monitors for new files.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -258,7 +258,7 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">About</CardTitle>
           <CardDescription>
-            PrintQueue v{appVersion}
+            Hello Print v{appVersion}
             {platform ? ` (${platform})` : ""} — Made by Jake Klassen of{" "}
             <a
               href="https://hellomagnets.studio"

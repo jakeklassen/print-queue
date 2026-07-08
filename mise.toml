@@ -10,6 +10,6 @@ run = "sudo apt-get update && sudo apt-get install -y libcups2-dev"
 [env]
 # Tauri updater signing key (path read by `tauri build` to sign updater artifacts).
 # The key file itself is gitignored under .keys/; only this path is committed.
-TAURI_SIGNING_PRIVATE_KEY = "{{config_root}}/.keys/print-queue.key"
+TAURI_SIGNING_PRIVATE_KEY = "{{config_root}}/.keys/hello-print.key"
 # Key was generated with an empty password; set it explicitly to skip the prompt.
 TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""

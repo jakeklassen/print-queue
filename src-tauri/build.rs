@@ -9,7 +9,7 @@ fn main() {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let out_dir = std::env::var("OUT_DIR").unwrap();
         let source =
-            std::path::Path::new(&manifest_dir).join("macos-helper/PrintQueueMacHelper.swift");
+            std::path::Path::new(&manifest_dir).join("macos-helper/HelloPrintMacHelper.swift");
 
         if source.exists() {
             // Determine the swiftc -target triple from the Rust target architecture.
@@ -23,7 +23,7 @@ fn main() {
             };
             let swift_target = format!("{}-apple-macosx11.0", swift_arch);
 
-            let build_binary = std::path::Path::new(&out_dir).join("printqueue-macos-helper");
+            let build_binary = std::path::Path::new(&out_dir).join("hello-print-macos-helper");
 
             let output = Command::new("xcrun")
                 .args([
@@ -54,7 +54,7 @@ fn main() {
             // Only copy when content differs to avoid triggering Tauri's file
             // watcher, which would cause an infinite rebuild loop during `tauri dev`.
             let staging_dir = std::path::Path::new(&manifest_dir).join("macos-helper");
-            let staging_binary = staging_dir.join("printqueue-macos-helper");
+            let staging_binary = staging_dir.join("hello-print-macos-helper");
 
             let needs_copy = if staging_binary.exists() {
                 let build_bytes =
